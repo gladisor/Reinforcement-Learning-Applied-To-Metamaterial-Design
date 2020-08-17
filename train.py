@@ -3,11 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import tensor, relu
+
 import random
 import matplotlib.pyplot as plt
 from collections import namedtuple
 import numpy as np
-from torch.optim.lr_scheduler import StepLR
+
 
 class ReplayMemory():
 	def __init__(self, capacity):
@@ -85,7 +86,7 @@ class Agent():
 
 			current_q_values = agent.Qp(s).gather(-1, a)
 			with torch.no_grad():
-				maxQ = agent.Qt(s_).max(-1)[0].unsqueeze(-1)
+				maxQ = agent.Qt(s_).max(-1, keepdim=True)[0]
 
 				target_q_values = torch.zeros(s_.shape[0], 1)
 				target_q_values[~terminal] = r[~terminal] + self.gamma * maxQ[~terminal]
@@ -95,11 +96,11 @@ class Agent():
 			self.opt.zero_grad()
 			loss.backward()
 			self.opt.step()
+			return loss.item()
 
 	def finish_episode(self):
 		self.eps *= self.eps_decay
 		self.eps = max(self.eps, self.eps_end)
-		# self.scheduler.step()
 
 Transition = namedtuple('Transition', ('s','a','r','s_','terminal'))
 
@@ -107,21 +108,20 @@ if __name__ == '__main__':
 	GAMMA = 0.99
 	EPS = 1
 	EPS_END = 0.05
-	EPS_DECAY = 0.995
-	TARGET_UPDATE = 100
+	EPS_DECAY = 0.99
+	TARGET_UPDATE = 10
 	MEMORY_SIZE = 1_000
 	BATCH_SIZE = 32
 	LR = 0.0005
-	NUM_EPISODES = 500
+	NUM_EPISODES = 1000
 
 	env = gym.make('LunarLander-v2')
-	# env = gym.make('CartPole-v1')
 
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
-	# agent.Qp.load_state_dict(torch.load('secondPass.pt'))
+	# agent.Qp.load_state_dict(torch.load('model.pt'))
 
 	step = 0
 	running_reward = 0
@@ -141,7 +141,7 @@ if __name__ == '__main__':
 			done = tensor([done])
 			e = Transition(state, action, reward, nextState, done)
 			agent.memory.push(e)
-			agent.optimize_model(e)
+			loss = agent.optimize_model(e)
 
 			state = nextState
 			if step % TARGET_UPDATE == 0:
@@ -150,11 +150,11 @@ if __name__ == '__main__':
 			if done:
 				break
 
-		print(f'#: {episode}, Score: {running_reward}, Eps: {agent.eps}')
-		running_reward = running_reward*0.9 + episode_reward*0.1
+		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}')
+		running_reward = running_reward*0.8 + episode_reward*0.2
 		hist.append(running_reward)
 		agent.finish_episode()
-		if running_reward > 250:
+		if running_reward > 200:
 			break
 	
 	del agent.memory.memory[:]
