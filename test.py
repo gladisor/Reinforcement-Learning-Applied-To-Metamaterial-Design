@@ -3,7 +3,7 @@ import torch
 from train import DQN
 
 dqn = DQN()
-dqn.load_state_dict(torch.load('long.pt'))
+dqn.load_state_dict(torch.load('lunarlander.pt'))
 env = gym.make('LunarLander-v2')
 state = torch.tensor([env.reset()]).float()
 for t in range(1000):
