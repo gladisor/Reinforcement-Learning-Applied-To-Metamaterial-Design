@@ -10,8 +10,9 @@ from collections import namedtuple
 import numpy as np
 
 class NaivePrioritizedBuffer(object):
-	def __init__(self, capacity, prob_alpha=0.6):
-		self.prob_alpha = prob_alpha
+	def __init__(self, capacity):
+		self.prob_alpha = 0.6
+		self.beta = 0.4
 		self.capacity = capacity
 		self.memory = []
 		self.idx = 0
@@ -23,7 +24,7 @@ class NaivePrioritizedBuffer(object):
 		self.memory[self.idx] = transition
 		self.idx = (self.idx + 1) % self.capacity
 
-	def sample(self, batch_size, beta=0.4):
+	def sample(self, batch_size):
 		if len(self.memory) == self.capacity:
 			prios = self.priorities
 		else:
@@ -36,7 +37,7 @@ class NaivePrioritizedBuffer(object):
 		samples = [self.memory[idx] for idx in indices]
 
 		total = len(self.memory)
-		weights = (total * probs[indices]) ** (-beta)
+		weights = (total * probs[indices]) ** (-self.beta)
 		weights /= weights.max()
 		weights = np.array(weights, dtype=np.float32)
 		return samples, indices, weights
@@ -63,6 +64,9 @@ class DQN(nn.Module):
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
+
+# Transition = namedtuple('Transition', ('s','a','r','s_','terminal'))
+Transition = namedtuple('Transition', ('c','tscs','a','r','c_','tscs_','done'))
 
 class Agent():
 	def __init__(self, 
@@ -98,19 +102,24 @@ class Agent():
 			experiences.append(e)
 			batch = Transition(*zip(*experiences))
 
-			s = torch.cat(batch.s)
+			c = torch.cat(batch.c)
+			tscs = torch.cat(batch.tscs)
 			a = torch.cat(batch.a).unsqueeze(-1)
 			r = torch.cat(batch.r).unsqueeze(-1)
-			s_ = torch.cat(batch.s_)
-			terminal = torch.cat(batch.terminal)
+			c_ = torch.cat(batch.c_)
+			tscs_ = torch.cat(batch.tscs_)
+			done = torch.cat(batch.done)
 
-			current_q_values = agent.Qp(s).gather(-1, a)
+			s = (c, tscs)
+			s_ = (c_, tscs_)
+
+			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
-				maxQ = agent.Qt(s_).max(-1, keepdim=True)[0]
+				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
 
-				target_q_values = torch.zeros(s_.shape[0], 1)
-				target_q_values[~terminal] = r[~terminal] + self.gamma * maxQ[~terminal]
-				target_q_values[terminal] = r[terminal]
+				target_q_values = torch.zeros(self.batch_size + 1, 1)
+				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
+				target_q_values[done] = r[done]
 
 			weights = torch.cat([torch.tensor([weights]).T, torch.tensor([[1.0]])], dim=0)
 			prios = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
@@ -127,14 +136,13 @@ class Agent():
 		self.eps *= self.eps_decay
 		self.eps = max(self.eps, self.eps_end)
 
-Transition = namedtuple('Transition', ('s','a','r','s_','terminal'))
 
 if __name__ == '__main__':
 	GAMMA = 0.99
 	EPS = 1
 	EPS_END = 0.05
 	EPS_DECAY = 0.99
-	TARGET_UPDATE = 500
+	TARGET_UPDATE = 1500
 	MEMORY_SIZE = 10_000
 	BATCH_SIZE = 32
 	LR = 0.0005
@@ -174,7 +182,7 @@ if __name__ == '__main__':
 			if done:
 				break
 
-		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}')
+		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}, Beta: {round(agent.memory.beta, 2)}')
 		running_reward = running_reward*0 + episode_reward*1
 		hist.append(running_reward)
 		agent.finish_episode()
