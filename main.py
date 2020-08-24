@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 from collections import namedtuple
+import matplotlib.pyplot as plt
+import numpy as np
 
 class CylinderNet(nn.Module):
 	def __init__(self):
@@ -30,7 +32,8 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 10_000
 	BATCH_SIZE = 32
 	LR = 0.0005
-	NUM_EPISODES = 300
+	NUM_EPISODES = 400
+	EPISODE_LEN = 500
 
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
@@ -46,15 +49,17 @@ if __name__ == '__main__':
 
 	from tqdm import tqdm
 	step = 0
-	running_reward = 0
-	hist = []
+	smoothed_reward = 0
+	hist = {'score':[],'smooth_score':[],'length':[]}
 	for episode in range(NUM_EPISODES):
 		episode_reward = 0
 		state = state = env.reset()
 		initial = state[1].mean().item()
-		for t in tqdm(range(500)):
+		for t in tqdm(range(EPISODE_LEN)):
 			action = agent.select_action(state)
 			nextState, reward, done = env.step(action)
+			if t == EPISODE_LEN - 1:
+				done = True
 			episode_reward += reward
 			step += 1
 
@@ -76,14 +81,20 @@ if __name__ == '__main__':
 			if done:
 				break
 
+		smoothed_reward = smoothed_reward * 0.8 + episode_reward * 0.2
 		final = state[1].mean().item()
-		print(f'#: {episode}, Initial: {round(initial, 4)}, Final: {round(final, 4)}, Score: {episode_reward}, Eps: {round(agent.eps, 2)}')
-		hist.append(episode_reward)
+		print(f'#: {episode}, Initial: {round(initial, 4)}, Final: {round(final, 4)}, Score: {round(episode_reward, 4)}, Eps: {round(agent.eps, 2)}')
+		hist['score'].append(episode_reward)
+		hist['smooth_score'].append(smoothed_reward)
+		hist['length'].append(t)
 		agent.finish_episode()
 	
 	del agent.memory.memory[:]
-	env.close()
-	plt.plot(hist)
+	plt.plot(hist['score'])
+	plt.plot(hist['smooth_score'])
+	plt.show()
+
+	plt.plot(hist['length'])
 	plt.show()
 
 	torch.save(agent.Qt.state_dict(), 'm.pt')
