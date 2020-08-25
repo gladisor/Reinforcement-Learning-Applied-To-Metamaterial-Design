@@ -2,7 +2,7 @@ import gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import tensor, relu
+from torch import tensor, relu, cat
 
 import random
 import matplotlib.pyplot as plt
@@ -66,7 +66,10 @@ class DQN(nn.Module):
 		return q
 
 # Transition = namedtuple('Transition', ('s','a','r','s_','terminal'))
-Transition = namedtuple('Transition', ('c','tscs','a','r','c_','tscs_','done'))
+Transition = namedtuple('Transition', (
+	'c','tscs',
+	'a','r',
+	'c_','tscs_','done'))
 
 class Agent():
 	def __init__(self, 
@@ -96,22 +99,21 @@ class Agent():
 			action = np.random.randint(4)
 		return action
 
+	def extract_tensors(self, batch):
+		s = (cat(batch.c), cat(batch.tscs))
+		a = cat(batch.a)
+		r = cat(batch.r)
+		s_ = (cat(batch.c_), cat(batch.tscs_))
+		done = cat(batch.done)
+		return s, a, r, s_, done
+
 	def optimize_model(self, e):
 		if self.memory.can_provide_sample(self.batch_size):
 			experiences, indices, weights = self.memory.sample(self.batch_size)
 			experiences.append(e)
 			batch = Transition(*zip(*experiences))
 
-			c = torch.cat(batch.c)
-			tscs = torch.cat(batch.tscs)
-			a = torch.cat(batch.a).unsqueeze(-1)
-			r = torch.cat(batch.r).unsqueeze(-1)
-			c_ = torch.cat(batch.c_)
-			tscs_ = torch.cat(batch.tscs_)
-			done = torch.cat(batch.done)
-
-			s = (c, tscs)
-			s_ = (c_, tscs_)
+			s, a, r, s_, done = self.extract_tensors(batch)
 
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
