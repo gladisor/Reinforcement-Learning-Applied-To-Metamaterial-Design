@@ -9,50 +9,10 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 import numpy as np
 
-class NaivePrioritizedBuffer(object):
-	def __init__(self, capacity):
-		self.prob_alpha = 0.6
-		self.beta = 0.4
-		self.capacity = capacity
-		self.memory = []
-		self.idx = 0
-		self.priorities = np.ones((capacity,), dtype=np.float32)
-
-	def push(self, transition):
-		if len(self.memory) < self.capacity:
-			self.memory.append(None)
-		self.memory[self.idx] = transition
-		self.idx = (self.idx + 1) % self.capacity
-
-	def sample(self, batch_size):
-		if len(self.memory) == self.capacity:
-			prios = self.priorities
-		else:
-			prios = self.priorities[:self.idx]
-
-		probs = prios ** self.prob_alpha
-		probs /= probs.sum()
-
-		indices = np.random.choice(len(self.memory), batch_size, p=probs)
-		samples = [self.memory[idx] for idx in indices]
-
-		total = len(self.memory)
-		weights = (total * probs[indices]) ** (-self.beta)
-		weights /= weights.max()
-		weights = np.array(weights, dtype=np.float32)
-		return samples, indices, weights
-
-	def can_provide_sample(self, batch_size):
-		return len(self.memory) >= batch_size
-
-	def update_priorities(self, batch_indices, batch_priorities):
-		for idx, prio in zip(batch_indices, batch_priorities):
-			self.priorities[idx] = prio
-
-	def __len__(self):
-		return len(self.memory)
+from memory import NaivePrioritizedBuffer
 
 class DQN(nn.Module):
+	## Base model for testing
 	def __init__(self):
 		super(DQN, self).__init__()
 		self.fc1 = nn.Linear(8, 100)
@@ -65,11 +25,15 @@ class DQN(nn.Module):
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
 
-# Transition = namedtuple('Transition', ('s','a','r','s_','terminal'))
+# Transition = namedtuple('Transition', ('s','a','r','s_','done'))
+# Transition = namedtuple('Transition', (
+# 	'c','tscs',
+# 	'a','r',
+# 	'c_','tscs_','done'))
 Transition = namedtuple('Transition', (
-	'c','tscs',
+	'c','tscs','img',
 	'a','r',
-	'c_','tscs_','done'))
+	'c_','tscs_','img_','done'))
 
 class Agent():
 	def __init__(self, 
@@ -89,25 +53,31 @@ class Agent():
 		self.batch_size = batch_size
 		self.opt = torch.optim.RMSprop(self.Qp.parameters(), lr=lr)
 
-	def select_action(self, state):		
+	def select_action(self, state):
+		## Epsilon greedy action selection		
 		if random.random() > self.eps:
 			## Exploit
 			with torch.no_grad():
 				action = torch.argmax(self.Qt(state), dim=-1).item()
 		else:
 			## Explore
-			action = np.random.randint(4)
+			action = np.random.randint(16)
 		return action
 
 	def extract_tensors(self, batch):
-		s = (cat(batch.c), cat(batch.tscs))
+		s = (cat(batch.c), cat(batch.tscs), cat(batch.img))
+		# s = cat(batch.s)
 		a = cat(batch.a)
 		r = cat(batch.r)
-		s_ = (cat(batch.c_), cat(batch.tscs_))
+		# s_ = cat(batch.s_)
+		s_ = (cat(batch.c_), cat(batch.tscs_), cat(batch.img_))
 		done = cat(batch.done)
 		return s, a, r, s_, done
 
 	def optimize_model(self, e):
+		"""
+		Bellman update with prioritized sampling
+		"""
 		if self.memory.can_provide_sample(self.batch_size):
 			experiences, indices, weights = self.memory.sample(self.batch_size)
 			experiences.append(e)
@@ -135,6 +105,9 @@ class Agent():
 			return loss.item()
 
 	def finish_episode(self):
+		"""
+		Used to update hyperparameters every episode
+		"""
 		self.eps *= self.eps_decay
 		self.eps = max(self.eps, self.eps_end)
 
@@ -144,7 +117,7 @@ if __name__ == '__main__':
 	EPS = 1
 	EPS_END = 0.05
 	EPS_DECAY = 0.99
-	TARGET_UPDATE = 1500
+	TARGET_UPDATE = 1000
 	MEMORY_SIZE = 10_000
 	BATCH_SIZE = 32
 	LR = 0.0005
@@ -169,8 +142,8 @@ if __name__ == '__main__':
 			episode_reward += reward
 			step += 1
 
-			action = tensor([action])
-			reward = tensor([reward]).float()
+			action = tensor([[action]])
+			reward = tensor([[reward]]).float()
 			nextState = tensor([nextState]).float()
 			done = tensor([done])
 			e = Transition(state, action, reward, nextState, done)
@@ -184,7 +157,7 @@ if __name__ == '__main__':
 			if done:
 				break
 
-		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}, Beta: {round(agent.memory.beta, 2)}')
+		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}')
 		running_reward = running_reward*0 + episode_reward*1
 		hist.append(running_reward)
 		agent.finish_episode()

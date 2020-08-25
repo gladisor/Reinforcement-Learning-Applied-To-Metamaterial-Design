@@ -2,29 +2,37 @@ import torch
 import torch.nn as nn
 
 class AddLayers(nn.Module):
-    def __init__(self, x_dim=50, y_dim=50):
+    def __init__(self):
         super(AddLayers, self).__init__()
-        self.x_dim = x_dim
-        self.y_dim = y_dim
 
     def forward(self, image):
-        batch_size = image.shape[0]
+        batch_size, _, x_dim, y_dim = image.shape
 
-        x_ones = torch.ones(batch_size, self.x_dim, 1)
-        x_range = torch.arange(self.y_dim)
-        x_channel = (x_ones*x_range).unsqueeze(-1)
+        ## Creating x channel
+        x_ones = torch.ones(batch_size, x_dim, 1)
+        x_range = torch.arange(y_dim)
+        x_channel = (x_ones*x_range) / (x_dim - 1)
+        x_channel = x_channel * 2 - 1
+        x_channel.resize_(batch_size, 1, x_dim, y_dim)
 
-        y_ones = torch.ones(batch_size, self.y_dim, 1)
-        y_range = torch.arange(self.x_dim)
-        y_channel = (y_ones*y_range).unsqueeze(-1)
+        ## Creating y channel
+        y_ones = torch.ones(batch_size, y_dim, 1)
+        y_range = torch.arange(x_dim)
+        y_channel = (y_ones*y_range).T / (y_dim - 1)
+        y_channel = y_channel * 2 - 1
+        y_channel = y_channel.permute(2, 0, 1)
+        y_channel.unsqueeze_(1)
 
-        out_image = torch.cat([image, x_channel, y_channel], dim=-1)
+        ## Conbining channels with original image
+        out_image = torch.cat([image, x_channel, y_channel], dim=1)
         return out_image
 
 if __name__ == '__main__':
     coordConv = AddLayers()
-    x = torch.randn(1, 50, 50, 1)
+    x = torch.zeros(5, 1, 50, 50)
     x = coordConv(x)
     print(x.shape)
-    print(x.view(50, 50, 3))
 
+    # import matplotlib.pyplot as plt
+    # plt.imshow(x.permute(2, 3, 1, 0).squeeze(-1))
+    # plt.show()

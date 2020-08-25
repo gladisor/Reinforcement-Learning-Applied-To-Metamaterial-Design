@@ -50,7 +50,9 @@ class TSCSEnv():
 		return withinBounds and not overlap
 
 	def getIMG(self, config):
-		## Produces a normalized tensor image of configuration
+		"""
+		Produces a normalized tensor image of configuration
+		"""
 		fig, ax = plt.subplots(figsize=(6, 6))
 		ax.axis('equal')
 		ax.set_xlim(xmin=-6, xmax=6)
@@ -66,17 +68,21 @@ class TSCSEnv():
 		im = Image.open(buf)
 		X = self.transform(im)
 		buf.close()
-		return X
+		plt.close(fig)
+		return X.unsqueeze(0)
 
 	def render(self):
-		## Shows config in image form to the screen
-		img = self.getIMG(self.config)
-		plt.imshow(img.type(torch.uint8).view(self.img_dim, self.img_dim, 4))
+		"""
+		Shows config in image form to the screen
+		"""
+		plt.imshow(self.img.type(torch.uint8).view(self.img_dim, self.img_dim, 4))
 		plt.show()
 
 	def getConfig(self):
-		## Generates a configuration which is within bounds 
-		# and not overlaping cylinders
+		"""
+		Generates a configuration which is within bounds 
+		and not overlaping cylinders
+		"""
 		valid = False
 		while not valid:
 			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
@@ -95,8 +101,10 @@ class TSCSEnv():
 		return torch.tensor(rms)
 
 	def getReward(self, TSCS, nextTSCS):
-		## Computes reward based on change in scattering 
-		# proporitional to how close it is to zero
+		"""
+		Computes reward based on change in scattering 
+		proporitional to how close it is to zero
+		"""
 		s0 = TSCS.mean().item()
 		s1 = nextTSCS.mean().item()
 		avg = (s0 + s1)/2
@@ -104,14 +112,19 @@ class TSCSEnv():
 		return reward
 
 	def reset(self):
-		## Generates starting config and calculates its tscs
+		"""
+		Generates starting config and calculates its tscs
+		"""
 		self.config = self.getConfig()
 		self.TSCS = self.getTSCS(self.config)
-		state = (self.config, self.TSCS)
+		self.img = self.getIMG(self.config)
+		state = (self.config, self.TSCS, self.img)
 		return state
 
 	def getNextConfig(self, config, action):
-		## Applys action to config
+		"""
+		Applys action to config
+		"""
 		coords = config.view(self.nCyl, 2)
 		cyl = int(action/4)
 		direction = action % 4
@@ -128,9 +141,11 @@ class TSCSEnv():
 
 	def step(self, action):
 		nextConfig = self.getNextConfig(self.config, action)
-		## If the config after applying the action is not valid
-		# we revert back to previous state and give negative reward
-		# otherwise, reward is calculated by the change in scattering
+		"""
+		If the config after applying the action is not valid
+		we revert back to previous state and give negative reward
+		otherwise, reward is calculated by the change in scattering
+		"""
 		done = False
 		if not self.validConfig(nextConfig):
 			reward = -10.0
@@ -140,8 +155,9 @@ class TSCSEnv():
 			reward = self.getReward(self.TSCS, nextTSCS)
 			self.config = nextConfig
 			self.TSCS = nextTSCS
+			self.img = self.getIMG(self.config)
 
-		state = (self.config, self.TSCS)
+		state = (self.config, self.TSCS, self.img)
 		return state, reward, done
 
 if __name__ == '__main__':
