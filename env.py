@@ -50,6 +50,7 @@ class TSCSEnv():
 		return withinBounds and not overlap
 
 	def getIMG(self, config):
+		## Produces a normalized tensor image of configuration
 		fig, ax = plt.subplots(figsize=(6, 6))
 		ax.axis('equal')
 		ax.set_xlim(xmin=-6, xmax=6)
@@ -68,11 +69,14 @@ class TSCSEnv():
 		return X
 
 	def render(self):
+		## Shows config in image form to the screen
 		img = self.getIMG(self.config)
 		plt.imshow(img.type(torch.uint8).view(self.img_dim, self.img_dim, 4))
 		plt.show()
 
 	def getConfig(self):
+		## Generates a configuration which is within bounds 
+		# and not overlaping cylinders
 		valid = False
 		while not valid:
 			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
@@ -81,14 +85,18 @@ class TSCSEnv():
 		return config
 
 	def getTSCS(self, config):
+		## Gets tscs of configuration from matlab
 		tscs = self.eng.getTSCS4CYL(*self.config.squeeze(0).tolist())
 		return torch.tensor(tscs).T
 
 	def getRMS(self, config):
+		## Gets rms of configuration from matlab
 		rms = self.eng.getRMS4CYL(*self.config.squeeze(0).tolist())
 		return torch.tensor(rms)
 
 	def getReward(self, TSCS, nextTSCS):
+		## Computes reward based on change in scattering 
+		# proporitional to how close it is to zero
 		s0 = TSCS.mean().item()
 		s1 = nextTSCS.mean().item()
 		avg = (s0 + s1)/2
@@ -96,6 +104,7 @@ class TSCSEnv():
 		return reward
 
 	def reset(self):
+		## Generates starting config and calculates its tscs
 		self.config = self.getConfig()
 		self.TSCS = self.getTSCS(self.config)
 		state = (self.config, self.TSCS)
