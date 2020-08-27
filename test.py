@@ -1,6 +1,6 @@
 import gym
 import torch
-from train import DQN
+from models import DQN
 
 dqn = DQN()
 dqn.load_state_dict(torch.load('m.pt'))

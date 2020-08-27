@@ -2,46 +2,24 @@ import gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import tensor, relu, cat
+from torch import tensor, cat
 
 import random
 import matplotlib.pyplot as plt
 from collections import namedtuple
 import numpy as np
+from tqdm import tqdm
 
 from memory import NaivePrioritizedBuffer
-
-class DQN(nn.Module):
-	## Base model for testing
-	def __init__(self):
-		super(DQN, self).__init__()
-		self.fc1 = nn.Linear(8, 100)
-		self.v = nn.Linear(100, 1)
-		self.adv = nn.Linear(100, 4)
-
-	def forward(self, x):
-		x = relu(self.fc1(x))
-		a = self.adv(x)
-		q = self.v(x) + a - a.mean(-1, keepdim=True)
-		return q
-
-# Transition = namedtuple('Transition', ('s','a','r','s_','done'))
-# Transition = namedtuple('Transition', (
-# 	'c','tscs',
-# 	'a','r',
-# 	'c_','tscs_','done'))
-Transition = namedtuple('Transition', (
-	'c','tscs','img',
-	'a','r',
-	'c_','tscs_','img_','done'))
+from models import DQN
 
 class Agent():
 	def __init__(self, 
 			gamma, eps, eps_end, eps_decay, 
 			memory_size, batch_size, lr):
 
-		self.Qp = DQN()
-		self.Qt = DQN()
+		self.Qp = DQN().cuda()
+		self.Qt = DQN().cuda()
 		self.Qt.load_state_dict(self.Qp.state_dict())
 		self.Qt.eval()
 
@@ -52,6 +30,8 @@ class Agent():
 		self.memory = NaivePrioritizedBuffer(memory_size)
 		self.batch_size = batch_size
 		self.opt = torch.optim.RMSprop(self.Qp.parameters(), lr=lr)
+
+		self.Transition = None
 
 	def select_action(self, state):
 		## Epsilon greedy action selection		
@@ -65,13 +45,23 @@ class Agent():
 		return action
 
 	def extract_tensors(self, batch):
-		s = (cat(batch.c), cat(batch.tscs), cat(batch.img))
+		s = (
+			cat(batch.c),
+			cat(batch.tscs), 
+			cat(batch.rms), 
+			cat(batch.img))
+
 		# s = cat(batch.s)
-		a = cat(batch.a)
-		r = cat(batch.r)
+		a = cat(batch.a).cuda()
+		r = cat(batch.r).cuda()
 		# s_ = cat(batch.s_)
-		s_ = (cat(batch.c_), cat(batch.tscs_), cat(batch.img_))
-		done = cat(batch.done)
+
+		s_ = (
+			cat(batch.c_),
+			cat(batch.tscs_),
+			cat(batch.rms_),
+			cat(batch.img_))
+		done = cat(batch.done).cuda()
 		return s, a, r, s_, done
 
 	def optimize_model(self, e):
@@ -81,19 +71,23 @@ class Agent():
 		if self.memory.can_provide_sample(self.batch_size):
 			experiences, indices, weights = self.memory.sample(self.batch_size)
 			experiences.append(e)
-			batch = Transition(*zip(*experiences))
+			batch = self.Transition(*zip(*experiences))
 
 			s, a, r, s_, done = self.extract_tensors(batch)
 
-			current_q_values = self.Qp(s).gather(-1, a)
+			current_q_values = self.Qp(s).gather(-1, a).cuda()
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
 
-				target_q_values = torch.zeros(self.batch_size + 1, 1)
+				target_q_values = torch.zeros(self.batch_size + 1, 1).cuda()
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
-			weights = torch.cat([torch.tensor([weights]).T, torch.tensor([[1.0]])], dim=0)
+			## Importance sampling weights for each td error
+			# Weight for appended transition is set to 1
+			weights = torch.cat([
+				torch.tensor([weights]).T,
+				torch.tensor([[1.0]])], dim=0).cuda()
 			prios = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
 
 			loss = prios.mean()
@@ -129,16 +123,21 @@ if __name__ == '__main__':
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
-	from tqdm import tqdm
+	agent.Transition = namedtuple(
+		'Transition', ('s','a','r','s_','done'))
+
 	step = 0
 	running_reward = 0
 	hist = []
 	for episode in range(NUM_EPISODES):
+
 		episode_reward = 0
 		state = tensor([env.reset()]).float()
+
 		for t in tqdm(range(1000)):
 			action = agent.select_action(state)
 			nextState, reward, done, _ = env.step(action)
+
 			episode_reward += reward
 			step += 1
 
@@ -146,13 +145,15 @@ if __name__ == '__main__':
 			reward = tensor([[reward]]).float()
 			nextState = tensor([nextState]).float()
 			done = tensor([done])
-			e = Transition(state, action, reward, nextState, done)
+
+			e = agent.Transition(state, action, reward, nextState, done)
 			agent.memory.push(e)
 			loss = agent.optimize_model(e)
 
 			state = nextState
 			if step % TARGET_UPDATE == 0:
 				agent.Qt.load_state_dict(agent.Qp.state_dict())
+				step = 0
 
 			if done:
 				break

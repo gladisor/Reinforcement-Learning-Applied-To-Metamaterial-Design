@@ -17,10 +17,10 @@ class TSCSEnv():
 		self.stepSize = 0.5
 
 		## State variables
-		self.img = None
 		self.config = None
 		self.TSCS = None
 		self.RMS = None
+		self.img = None
 
 		## Image transform
 		self.img_dim = 50
@@ -53,15 +53,18 @@ class TSCSEnv():
 		"""
 		Produces a normalized tensor image of configuration
 		"""
+		## Generate figure
 		fig, ax = plt.subplots(figsize=(6, 6))
 		ax.axis('equal')
 		ax.set_xlim(xmin=-6, xmax=6)
 		ax.set_ylim(ymin=-6, ymax=6)
-		ax.grid()
+		# ax.grid() ## Try turning this off
 
 		config = config.view(self.nCyl, 2)
 		for cyl in range(self.nCyl):
 			ax.add_artist(Circle((config[cyl, 0], config[cyl, 1]), radius=0.5))
+
+		## Convert to tensor
 		buf = io.BytesIO()
 		plt.savefig(buf, format='png')
 		buf.seek(0)
@@ -98,17 +101,17 @@ class TSCSEnv():
 	def getRMS(self, config):
 		## Gets rms of configuration from matlab
 		rms = self.eng.getRMS4CYL(*self.config.squeeze(0).tolist())
-		return torch.tensor(rms)
+		return torch.tensor([[rms]])
 
-	def getReward(self, TSCS, nextTSCS):
+	def getReward(self, RMS, nextRMS):
 		"""
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		s0 = TSCS.mean().item()
-		s1 = nextTSCS.mean().item()
+		s0 = RMS.item()
+		s1 = nextRMS.item()
 		avg = (s0 + s1)/2
-		reward = 10/avg*(TSCS - nextTSCS).mean().item()
+		reward = (100/avg)*(s0 - s1)
 		return reward
 
 	def reset(self):
@@ -117,8 +120,9 @@ class TSCSEnv():
 		"""
 		self.config = self.getConfig()
 		self.TSCS = self.getTSCS(self.config)
+		self.RMS = self.getRMS(self.config)
 		self.img = self.getIMG(self.config)
-		state = (self.config, self.TSCS, self.img)
+		state = (self.config, self.TSCS, self.RMS, self.img)
 		return state
 
 	def getNextConfig(self, config, action):
@@ -140,34 +144,35 @@ class TSCSEnv():
 		return nextConfig
 
 	def step(self, action):
-		nextConfig = self.getNextConfig(self.config, action)
 		"""
 		If the config after applying the action is not valid
 		we revert back to previous state and give negative reward
 		otherwise, reward is calculated by the change in scattering
 		"""
+		nextConfig = self.getNextConfig(self.config, action)
 		done = False
 		if not self.validConfig(nextConfig):
 			reward = -10.0
 			done = True
 		else:
-			nextTSCS = self.getTSCS(nextConfig)
-			reward = self.getReward(self.TSCS, nextTSCS)
 			self.config = nextConfig
-			self.TSCS = nextTSCS
+			self.TSCS = self.getTSCS(nextConfig)
+			nextRMS = self.getRMS(nextConfig)
+			reward = self.getReward(self.RMS, nextRMS)
+			self.RMS = nextRMS
 			self.img = self.getIMG(self.config)
 
-		state = (self.config, self.TSCS, self.img)
-		return state, reward, done
+		nextState = (self.config, self.TSCS, self.RMS, self.img)
+		return nextState, reward, done
 
 if __name__ == '__main__':
 	env = TSCSEnv()
 	state = env.reset()
-	config, tscs = state
+	config, tscs, rms, img = state
 
-	done = False
-	while not done:
-		env.render()
-		action = int(input("Action: "))
-		state,reward,done=env.step(action)
-		print(reward)
+	# done = False
+	# while not done:
+	# 	env.render()
+	# 	action = int(input("Action: "))
+	# 	state,reward,done=env.step(action)
+	# 	print(reward)
