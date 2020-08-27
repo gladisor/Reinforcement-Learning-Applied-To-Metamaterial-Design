@@ -6,7 +6,7 @@ from torchvision import transforms
 from PIL import Image
 import io
 
-## 4 Cylinder TSCS calculator
+## 4 Cylinder TSCS
 class TSCSEnv():
 	"""docstring for TSCSEnv"""
 	def __init__(self):

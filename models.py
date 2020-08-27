@@ -11,27 +11,11 @@ class DQN(nn.Module):
 		self.adv = nn.Linear(100, 4)
 
 	def forward(self, s):
-		x = torch.relu(self.fc1(s.cuda()))
+		x = torch.relu(self.fc1(s))
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
-
-class CylinderNet(nn.Module):
-	def __init__(self):
-		super(CylinderNet, self).__init__()
-		self.fc1 = nn.Linear(19, 100)
-		self.fc2 = nn.Linear(100, 100)
-		self.v = nn.Linear(100, 1)
-		self.adv = nn.Linear(100, 16)
-
-	def forward(self, s):
-		x = torch.cat([s[0], s[1]], dim=-1)
-		x = torch.relu(self.fc1(x))
-		x = torch.relu(self.fc2(x))
-		a = self.adv(x)
-		q = self.v(x) + a - a.mean(-1, keepdim=True)
-		return q
-
+		
 class CylinderCoordConv(nn.Module):
 	def __init__(self):
 		super(CylinderCoordConv, self).__init__()

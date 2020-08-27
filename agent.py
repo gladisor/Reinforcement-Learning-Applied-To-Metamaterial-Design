@@ -41,7 +41,7 @@ class Agent():
 				action = torch.argmax(self.Qt(state), dim=-1).item()
 		else:
 			## Explore
-			action = np.random.randint(16)
+			action = np.random.randint(4)
 		return action
 
 	def extract_tensors(self, batch):
@@ -50,6 +50,7 @@ class Agent():
 			cat(batch.tscs), 
 			cat(batch.rms), 
 			cat(batch.img))
+		# s = cat(batch.s)
 
 		a = cat(batch.a)
 		r = cat(batch.r)
@@ -59,6 +60,7 @@ class Agent():
 			cat(batch.tscs_),
 			cat(batch.rms_),
 			cat(batch.img_))
+		# s_ = cat(batch.s_)
 
 		done = cat(batch.done)
 		return s, a, r, s_, done
@@ -103,69 +105,3 @@ class Agent():
 		"""
 		self.eps *= self.eps_decay
 		self.eps = max(self.eps, self.eps_end)
-
-
-if __name__ == '__main__':
-	GAMMA = 0.99
-	EPS = 1
-	EPS_END = 0.05
-	EPS_DECAY = 0.99
-	TARGET_UPDATE = 1000
-	MEMORY_SIZE = 10_000
-	BATCH_SIZE = 32
-	LR = 0.0005
-	NUM_EPISODES = 300
-
-	env = gym.make('LunarLander-v2')
-
-	agent = Agent(
-		GAMMA, EPS, EPS_END, EPS_DECAY, 
-		MEMORY_SIZE, BATCH_SIZE, LR)
-
-	agent.Transition = namedtuple(
-		'Transition', ('s','a','r','s_','done'))
-
-	step = 0
-	running_reward = 0
-	hist = []
-	for episode in range(NUM_EPISODES):
-
-		episode_reward = 0
-		state = tensor([env.reset()]).float()
-
-		for t in tqdm(range(1000)):
-
-			action = agent.select_action(state)
-			nextState, reward, done, _ = env.step(action)
-
-			episode_reward += reward
-			step += 1
-
-			action = tensor([[action]])
-			reward = tensor([[reward]]).float()
-			nextState = tensor([nextState]).float()
-			done = tensor([done])
-
-			e = agent.Transition(state, action, reward, nextState, done)
-			agent.memory.push(e)
-			loss = agent.optimize_model(e)
-
-			state = nextState
-			if step % TARGET_UPDATE == 0:
-				agent.Qt.load_state_dict(agent.Qp.state_dict())
-				step = 0
-
-			if done:
-				break
-
-		print(f'#: {episode}, Score: {round(running_reward,2)}, Eps: {round(agent.eps, 2)}')
-		running_reward = running_reward*0 + episode_reward*1
-		hist.append(running_reward)
-		agent.finish_episode()
-	
-	del agent.memory.memory[:]
-	env.close()
-	plt.plot(hist)
-	plt.show()
-
-	torch.save(agent.Qt.state_dict(), 'm.pt')
