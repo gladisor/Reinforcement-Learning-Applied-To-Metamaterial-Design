@@ -49,6 +49,27 @@ class TSCSEnv():
 							overlap = True
 		return withinBounds and not overlap
 
+	def getConfig(self):
+		"""
+		Generates a configuration which is within bounds 
+		and not overlaping cylinders
+		"""
+		while True:
+			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
+			if self.validConfig(config):
+				break
+		return config
+
+	def getTSCS(self, config):
+		## Gets tscs of configuration from matlab
+		tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
+		return torch.tensor(tscs).T
+
+	def getRMS(self, config):
+		## Gets rms of configuration from matlab
+		rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
+		return torch.tensor([[rms]])
+
 	def getIMG(self, config):
 		"""
 		Produces tensor image of configuration
@@ -83,28 +104,6 @@ class TSCSEnv():
 		"""
 		plt.imshow(self.img.view(self.img_dim, self.img_dim))
 		plt.show()
-
-	def getConfig(self):
-		"""
-		Generates a configuration which is within bounds 
-		and not overlaping cylinders
-		"""
-		valid = False
-		while not valid:
-			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
-			if self.validConfig(config):
-				break
-		return config
-
-	def getTSCS(self, config):
-		## Gets tscs of configuration from matlab
-		tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
-		return torch.tensor(tscs).T
-
-	def getRMS(self, config):
-		## Gets rms of configuration from matlab
-		rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
-		return torch.tensor([[rms]])
 
 	def getReward(self, RMS, nextRMS):
 		"""
@@ -153,29 +152,32 @@ class TSCSEnv():
 		otherwise, reward is calculated by the change in scattering
 		"""
 		nextConfig = self.getNextConfig(self.config, action)
-		done = False
-		if not self.validConfig(nextConfig):
-			reward = -10.0
-			done = True
-		else:
+		if self.validConfig(nextConfig):
 			self.config = nextConfig
 			self.TSCS = self.getTSCS(nextConfig)
 			nextRMS = self.getRMS(nextConfig)
 			reward = self.getReward(self.RMS, nextRMS)
 			self.RMS = nextRMS
-			self.img = self.getIMG(self.config)
+			self.img = self.getIMG(nextConfig)
+			done = False
+		else:
+			reward = -10.0
+			done = True
 
 		nextState = (self.config, self.TSCS, self.RMS, self.img)
 		return nextState, reward, done
 
 if __name__ == '__main__':
+	import numpy as np
 	env = TSCSEnv()
 	state = env.reset()
-	config, tscs, rms, img = state
 
-	done = False
-	while not done:
+	for t in range(1000):
 		env.render()
-		action = int(input("Action: "))
+		action = np.random.randint(16)
+		print(f"Action: {action}")
 		state, reward, done = env.step(action)
-		print(reward)
+		print(f"RMS: {round(state[2].item(),2)}")
+		print(f"Reward: {reward}")
+		if done:
+			break

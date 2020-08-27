@@ -41,7 +41,7 @@ class Agent():
 				action = torch.argmax(self.Qt(state), dim=-1).item()
 		else:
 			## Explore
-			action = np.random.randint(4)
+			action = np.random.randint(16)
 		return action
 
 	def extract_tensors(self, batch):
@@ -52,8 +52,8 @@ class Agent():
 			cat(batch.img))
 		# s = cat(batch.s)
 
-		a = cat(batch.a)
-		r = cat(batch.r)
+		a = cat(batch.a).cuda()
+		r = cat(batch.r).cuda()
 
 		s_ = (
 			cat(batch.c_),
@@ -62,7 +62,7 @@ class Agent():
 			cat(batch.img_))
 		# s_ = cat(batch.s_)
 
-		done = cat(batch.done)
+		done = cat(batch.done).cuda()
 		return s, a, r, s_, done
 
 	def optimize_model(self, e):
@@ -80,7 +80,7 @@ class Agent():
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
 
-				target_q_values = torch.zeros(self.batch_size + 1, 1)
+				target_q_values = torch.zeros(self.batch_size + 1, 1).cuda()
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
@@ -88,7 +88,7 @@ class Agent():
 			# Weight for appended transition is set to 1
 			weights = torch.cat([
 				torch.tensor([weights]).T,
-				torch.tensor([[1.0]])], dim=0)
+				torch.tensor([[1.0]])]).cuda()
 			prios = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
 
 			loss = prios.mean()

@@ -24,7 +24,7 @@ class AddLayers(nn.Module):
         y_channel.unsqueeze_(1)
 
         ## Conbining channels with original image
-        out_image = torch.cat([image, x_channel, y_channel], dim=1)
+        out_image = torch.cat([image, x_channel.cuda(), y_channel.cuda()], dim=1)
         return out_image
 
 if __name__ == '__main__':
