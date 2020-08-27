@@ -26,8 +26,8 @@ class TSCSEnv():
 		self.img_dim = 50
 		self.transform = transforms.Compose([
 			transforms.Resize((self.img_dim, self.img_dim)),
-			transforms.ToTensor(),
-			transforms.Normalize(1, 1)])
+			transforms.Grayscale(),
+			transforms.ToTensor()])
 
 	def validConfig(self, config):
 		"""
@@ -51,25 +51,28 @@ class TSCSEnv():
 
 	def getIMG(self, config):
 		"""
-		Produces a normalized tensor image of configuration
+		Produces tensor image of configuration
 		"""
 		## Generate figure
 		fig, ax = plt.subplots(figsize=(6, 6))
 		ax.axis('equal')
 		ax.set_xlim(xmin=-6, xmax=6)
 		ax.set_ylim(ymin=-6, ymax=6)
-		# ax.grid() ## Try turning this off
+		ax.axis('off')
 
-		config = config.view(self.nCyl, 2)
+		coords = config.view(self.nCyl, 2)
 		for cyl in range(self.nCyl):
-			ax.add_artist(Circle((config[cyl, 0], config[cyl, 1]), radius=0.5))
+			ax.add_artist(Circle((coords[cyl, 0], coords[cyl, 1]), radius=0.5))
 
 		## Convert to tensor
 		buf = io.BytesIO()
 		plt.savefig(buf, format='png')
 		buf.seek(0)
 		im = Image.open(buf)
+
+		## Apply series of transformations
 		X = self.transform(im)
+
 		buf.close()
 		plt.close(fig)
 		return X.unsqueeze(0)
@@ -78,7 +81,7 @@ class TSCSEnv():
 		"""
 		Shows config in image form to the screen
 		"""
-		plt.imshow(self.img.type(torch.uint8).view(self.img_dim, self.img_dim, 4))
+		plt.imshow(self.img.view(self.img_dim, self.img_dim))
 		plt.show()
 
 	def getConfig(self):
@@ -95,12 +98,12 @@ class TSCSEnv():
 
 	def getTSCS(self, config):
 		## Gets tscs of configuration from matlab
-		tscs = self.eng.getTSCS4CYL(*self.config.squeeze(0).tolist())
+		tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
 		return torch.tensor(tscs).T
 
 	def getRMS(self, config):
 		## Gets rms of configuration from matlab
-		rms = self.eng.getRMS4CYL(*self.config.squeeze(0).tolist())
+		rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
 		return torch.tensor([[rms]])
 
 	def getReward(self, RMS, nextRMS):
@@ -170,9 +173,9 @@ if __name__ == '__main__':
 	state = env.reset()
 	config, tscs, rms, img = state
 
-	# done = False
-	# while not done:
-	# 	env.render()
-	# 	action = int(input("Action: "))
-	# 	state,reward,done=env.step(action)
-	# 	print(reward)
+	done = False
+	while not done:
+		env.render()
+		action = int(input("Action: "))
+		state, reward, done = env.step(action)
+		print(reward)

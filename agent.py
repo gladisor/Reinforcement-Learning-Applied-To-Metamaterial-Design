@@ -18,8 +18,8 @@ class Agent():
 			gamma, eps, eps_end, eps_decay, 
 			memory_size, batch_size, lr):
 
-		self.Qp = DQN().cuda()
-		self.Qt = DQN().cuda()
+		self.Qp = DQN()
+		self.Qt = DQN()
 		self.Qt.load_state_dict(self.Qp.state_dict())
 		self.Qt.eval()
 
@@ -51,17 +51,16 @@ class Agent():
 			cat(batch.rms), 
 			cat(batch.img))
 
-		# s = cat(batch.s)
-		a = cat(batch.a).cuda()
-		r = cat(batch.r).cuda()
-		# s_ = cat(batch.s_)
+		a = cat(batch.a)
+		r = cat(batch.r)
 
 		s_ = (
 			cat(batch.c_),
 			cat(batch.tscs_),
 			cat(batch.rms_),
 			cat(batch.img_))
-		done = cat(batch.done).cuda()
+
+		done = cat(batch.done)
 		return s, a, r, s_, done
 
 	def optimize_model(self, e):
@@ -75,11 +74,11 @@ class Agent():
 
 			s, a, r, s_, done = self.extract_tensors(batch)
 
-			current_q_values = self.Qp(s).gather(-1, a).cuda()
+			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
 
-				target_q_values = torch.zeros(self.batch_size + 1, 1).cuda()
+				target_q_values = torch.zeros(self.batch_size + 1, 1)
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
@@ -87,7 +86,7 @@ class Agent():
 			# Weight for appended transition is set to 1
 			weights = torch.cat([
 				torch.tensor([weights]).T,
-				torch.tensor([[1.0]])], dim=0).cuda()
+				torch.tensor([[1.0]])], dim=0)
 			prios = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
 
 			loss = prios.mean()
@@ -135,6 +134,7 @@ if __name__ == '__main__':
 		state = tensor([env.reset()]).float()
 
 		for t in tqdm(range(1000)):
+
 			action = agent.select_action(state)
 			nextState, reward, done, _ = env.step(action)
 

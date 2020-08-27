@@ -24,15 +24,12 @@ class AddLayers(nn.Module):
         y_channel.unsqueeze_(1)
 
         ## Conbining channels with original image
-        out_image = torch.cat([image.cuda(), x_channel.cuda(), y_channel.cuda()], dim=1)
+        out_image = torch.cat([image, x_channel, y_channel], dim=1)
         return out_image
 
 if __name__ == '__main__':
     coordConv = AddLayers()
-    x = torch.zeros(5, 1, 50, 50)
+    x = torch.ones(1, 1, 50, 50)
     x = coordConv(x)
+    print(x)
     print(x.shape)
-
-    # import matplotlib.pyplot as plt
-    # plt.imshow(x.permute(2, 3, 1, 0).squeeze(-1))
-    # plt.show()

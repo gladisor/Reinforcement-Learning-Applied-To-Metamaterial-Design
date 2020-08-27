@@ -1,13 +1,13 @@
 from env import TSCSEnv
 from agent import Agent
 from models import CylinderNet, CylinderCoordConv
-
 import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 if __name__ == '__main__':
+	## Hyperparameters
 	GAMMA = 0.99
 	EPS = 1
 	EPS_END = 0.05
@@ -19,20 +19,24 @@ if __name__ == '__main__':
 	NUM_EPISODES = 5000
 	EPISODE_LEN = 200
 
+	## Creating agent object with parameters
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
-	agent.Qp, agent.Qt = CylinderCoordConv().cuda(), CylinderCoordConv().cuda()
+	## Defining models
+	agent.Qp, agent.Qt = CylinderCoordConv(), CylinderCoordConv()
 	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
 	agent.Qt.eval()
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
-	
+
+	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
 		('c','tscs','rms','img',
 		'a','r',
 		'c_','tscs_','rms_','img_','done'))
 
+	## Creating environment object
 	env = TSCSEnv()
 
 	step = 0
@@ -59,17 +63,20 @@ if __name__ == '__main__':
 			action = torch.tensor([[action]])
 			reward = torch.tensor([[reward]]).float()
 			done = torch.tensor([done])
-			e = agent.Transition(
-				*state, action, reward, *nextState, done)
+			e = agent.Transition(*state, action, reward, *nextState, done)
 
+			## Add most recent transition to memory and update model
 			agent.memory.push(e)
 			loss = agent.optimize_model(e)
 
 			state = nextState
+
+			## Copy policy weights over to target net
 			if step % TARGET_UPDATE == 0:
 				agent.Qt.load_state_dict(agent.Qp.state_dict())
 				step = 0
 
+			## End episode if terminal state
 			if done:
 				break
 
@@ -81,7 +88,6 @@ if __name__ == '__main__':
 		hist['length'].append(t)
 		agent.finish_episode()
 	
-	del agent.memory.memory[:]
 	plt.plot(hist['score'])
 	plt.plot(hist['smooth_score'])
 	plt.show()
@@ -89,4 +95,4 @@ if __name__ == '__main__':
 	plt.plot(hist['length'])
 	plt.show()
 
-	torch.save(agent.Qt.state_dict(), 're_training.pt')
+	torch.save(agent.Qt.state_dict(), 'model.pt')

@@ -38,28 +38,26 @@ class CylinderCoordConv(nn.Module):
 		## Adding coordconv layers
 		self.addlayers = AddLayers()
 		## Conv layers
-		self.conv1 = nn.Conv2d(6, 16, kernel_size=10, stride=2)
-		self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
-		self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2)
+		self.conv1 = nn.Conv2d(3, 8, kernel_size=10, stride=2)
+		self.conv2 = nn.Conv2d(8, 16, kernel_size=5, stride=2)
+		self.conv3 = nn.Conv2d(16, 32, kernel_size=3, stride=2)
 		self.flat = nn.Flatten()
 		## Linear layers
-		self.fc1 = nn.Linear(1044, 512)
-		self.fc2 = nn.Linear(512, 256)
-		self.fc3 = nn.Linear(256, 100)
-		self.v = nn.Linear(100, 1)
-		self.adv = nn.Linear(100, 16)
+		self.fc1 = nn.Linear(532, 256)
+		self.fc2 = nn.Linear(256, 128)
+		self.v = nn.Linear(128, 1)
+		self.adv = nn.Linear(128, 16)
 
 	def forward(self, s):
 		config, tscs, rms, img = s
-		x = self.addlayers(img.cuda())
+		x = self.addlayers(img)
 		x = torch.relu(self.conv1(x))
 		x = torch.relu(self.conv2(x))
 		x = torch.relu(self.conv3(x))
 		x = self.flat(x)
-		x = torch.cat([x, config.cuda(), tscs.cuda(), rms.cuda()], dim=-1)
+		x = torch.cat([x, config, tscs, rms], dim=-1)
 		x = torch.relu(self.fc1(x))
 		x = torch.relu(self.fc2(x))
-		x = torch.relu(self.fc3(x))
 		a = self.adv(x)
 		q = self.v(x) - a + a.mean(-1, keepdim=True)
 		return q
@@ -69,8 +67,8 @@ if __name__ == '__main__':
 
 	env = TSCSEnv()
 	state = env.reset()
-	config, tscs, img = state
-	print(config.shape, tscs.shape, img.shape)
+	config, tscs, rms, img = state
+	print(config.shape, tscs.shape, rms.shape, img.shape)
 
 	q = CylinderCoordConv()
 	out = q(state)
