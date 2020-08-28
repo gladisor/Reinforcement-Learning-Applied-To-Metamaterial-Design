@@ -18,11 +18,13 @@ class Agent():
 			gamma, eps, eps_end, eps_decay, 
 			memory_size, batch_size, lr, cuda=True):
 
+		## Networks
 		self.Qp = DQN()
 		self.Qt = DQN()
 		self.Qt.load_state_dict(self.Qp.state_dict())
 		self.Qt.eval()
 
+		## Hyperperameters
 		self.gamma = gamma
 		self.eps = eps
 		self.eps_end = eps_end
@@ -45,6 +47,7 @@ class Agent():
 		return action
 
 	def extract_tensors(self, batch):
+		## State info
 		s = (
 			cat(batch.c),
 			cat(batch.tscs), 
@@ -52,9 +55,11 @@ class Agent():
 			cat(batch.img))
 		# s = cat(batch.s)
 
+		## Action, reward
 		a = cat(batch.a)
 		r = cat(batch.r)
 
+		## Next state info
 		s_ = (
 			cat(batch.c_),
 			cat(batch.tscs_),
