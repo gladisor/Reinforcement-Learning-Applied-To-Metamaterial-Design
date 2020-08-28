@@ -9,16 +9,16 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
 	## Hyperparameters
-	GAMMA = 0.99
+	GAMMA = 0.9
 	EPS = 1
-	EPS_END = 0.05
-	EPS_DECAY = 0.995
+	EPS_END = 0.1
+	EPS_DECAY = 0.99
 	TARGET_UPDATE = 1000 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	NUM_EPISODES = 600
-	EPISODE_LEN = 1000
+	EPISODE_LEN = 500
 
 	## Creating agent object with parameters
 	agent = Agent(
