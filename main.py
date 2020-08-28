@@ -15,7 +15,7 @@ if __name__ == '__main__':
 	EPS_DECAY = 0.995
 	TARGET_UPDATE = 1000 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
-	BATCH_SIZE = 1024
+	BATCH_SIZE = 512
 	LR = 0.0005
 	NUM_EPISODES = 10_000
 	EPISODE_LEN = 1000
@@ -29,6 +29,8 @@ if __name__ == '__main__':
 	agent.Qp, agent.Qt = CylinderCoordConv().cuda(), CylinderCoordConv().cuda()
 	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
 	agent.Qt.eval()
+
+	agent.Qp.load_state_dict(torch.load('model.pt'))
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 
 	## This is the holder for transition data

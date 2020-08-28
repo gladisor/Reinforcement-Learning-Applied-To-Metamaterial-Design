@@ -110,10 +110,9 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		s0 = RMS.item()
-		s1 = nextRMS.item()
-		avg = (s0 + s1)/2
-		reward = (100/avg)*(s0 - s1)
+		s0 = -torch.sqrt(RMS).item()
+		s1 = -torch.sqrt(nextRMS).item()
+		reward = s1 - s0
 		return reward
 
 	def reset(self):
