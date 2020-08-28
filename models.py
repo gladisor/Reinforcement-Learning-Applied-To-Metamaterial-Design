@@ -18,10 +18,11 @@ class DQN(nn.Module):
 		return q
 		
 class CylinderCoordConv(nn.Module):
-	def __init__(self):
+	def __init__(self, cuda=True):
 		super(CylinderCoordConv, self).__init__()
+		self.cuda = cuda
 		## Adding coordconv layers
-		self.addlayers = AddLayers()
+		self.addlayers = AddLayers(self.cuda)
 		## Conv layers
 		self.conv1 = nn.Conv2d(3, 8, kernel_size=10, stride=2)
 		self.conv2 = nn.Conv2d(8, 16, kernel_size=10, stride=2)
@@ -34,11 +35,17 @@ class CylinderCoordConv(nn.Module):
 
 	def forward(self, s):
 		config, tscs, rms, img = s
-		x = self.addlayers(img.cuda())
+		if self.cuda:
+			config.cuda()
+			tscs.cuda()
+			rms.cuda()
+			img.cuda()
+			
+		x = self.addlayers(img)
 		x = relu(self.conv1(x))
 		x = relu(self.conv2(x))
 		x = self.flat(x)
-		x = torch.cat([x, config.cuda(), tscs.cuda(), rms.cuda()], dim=-1)
+		x = torch.cat([x, config, tscs, rms], dim=-1)
 		x = relu(self.fc1(x))
 		x = relu(self.fc2(x))
 		a = self.adv(x)

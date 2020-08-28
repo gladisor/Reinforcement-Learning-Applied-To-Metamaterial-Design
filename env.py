@@ -111,9 +111,8 @@ class TSCSEnv():
 		proporitional to how close it is to zero
 		"""
 		s0 = -torch.sqrt(RMS).item()
-		s1 = -torch.sqrt(nextRMS).item()
-		reward = s1 - s0
-		return reward
+		s1 = 1 - (nextRMS/100).pow(0.4).item()
+		return s1
 
 	def reset(self):
 		"""

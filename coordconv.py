@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 
 class AddLayers(nn.Module):
-    def __init__(self):
+    def __init__(self, cuda):
         super(AddLayers, self).__init__()
+        self.cuda = cuda
 
     def forward(self, image):
         batch_size, _, x_dim, y_dim = image.shape
@@ -24,7 +25,10 @@ class AddLayers(nn.Module):
         y_channel.unsqueeze_(1)
 
         ## Conbining channels with original image
-        out_image = torch.cat([image, x_channel.cuda(), y_channel.cuda()], dim=1)
+        if self.cuda:
+            x_channel.cuda()
+            y_channel.cuda()
+        out_image = torch.cat([image, x_channel, y_channel], dim=1)
         return out_image
 
 if __name__ == '__main__':
