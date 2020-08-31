@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	EPS_DECAY = 0.99
 	TARGET_UPDATE = 1000 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
-	BATCH_SIZE = 128
+	BATCH_SIZE = 64
 	LR = 0.0005
 	NUM_EPISODES = 326
 	EPISODE_LEN = 1000
