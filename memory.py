@@ -13,6 +13,7 @@ class NaivePrioritizedBuffer(object):
 		if len(self.memory) < self.capacity:
 			self.memory.append(None)
 		self.memory[self.idx] = transition
+		self.priorities[self.idx] = self.priorities.max()
 		self.idx = (self.idx + 1) % self.capacity
 
 	def sample(self, batch_size):

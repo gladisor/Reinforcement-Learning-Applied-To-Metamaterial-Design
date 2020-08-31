@@ -18,11 +18,11 @@ class DQN(nn.Module):
 		return q
 		
 class CylinderCoordConv(nn.Module):
-	def __init__(self, cuda=True):
+	def __init__(self, useCuda):
 		super(CylinderCoordConv, self).__init__()
-		self.cuda = cuda
+		self.useCuda = useCuda
 		## Adding coordconv layers
-		self.addlayers = AddLayers(self.cuda)
+		self.addlayers = AddLayers(self.useCuda)
 		## Conv layers
 		self.conv1 = nn.Conv2d(3, 8, kernel_size=10, stride=2)
 		self.conv2 = nn.Conv2d(8, 16, kernel_size=10, stride=2)
@@ -35,11 +35,11 @@ class CylinderCoordConv(nn.Module):
 
 	def forward(self, s):
 		config, tscs, rms, img = s
-		if self.cuda:
-			config.cuda()
-			tscs.cuda()
-			rms.cuda()
-			img.cuda()
+		if self.useCuda:
+			config = config.cuda()
+			tscs = tscs.cuda()
+			rms = rms.cuda()
+			img = img.cuda()
 			
 		x = self.addlayers(img)
 		x = relu(self.conv1(x))

@@ -105,14 +105,13 @@ class TSCSEnv():
 		plt.imshow(self.img.view(self.img_dim, self.img_dim))
 		plt.show()
 
-	def getReward(self, RMS, nextRMS):
+	def getReward(self, RMS):
 		"""
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		s0 = -torch.sqrt(RMS).item()
-		s1 = 1 - (nextRMS/100).pow(0.4).item()
-		return s1
+		reward = 1 - (RMS/100).pow(0.4).item()
+		return reward
 
 	def reset(self):
 		"""
@@ -153,10 +152,10 @@ class TSCSEnv():
 		if self.validConfig(nextConfig):
 			self.config = nextConfig
 			self.TSCS = self.getTSCS(nextConfig)
-			nextRMS = self.getRMS(nextConfig)
-			reward = self.getReward(self.RMS, nextRMS)
-			self.RMS = nextRMS
+			self.RMS = self.getRMS(nextConfig)
 			self.img = self.getIMG(nextConfig)
+			
+			reward = self.getReward(self.RMS)
 			done = False
 		else:
 			reward = -10.0
