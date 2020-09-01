@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
 	## Hyperparameters
-	GAMMA = 0.99
+	GAMMA = 0.85
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.99
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 	LR = 0.0005
 	NUM_EPISODES = 300
 	EPISODE_LEN = 500
-	useCuda = False
+	useCuda = True
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -28,9 +28,9 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	## Defining models
-	agent.Qp = CylinderCoordConv(useCuda=False)
-	agent.Qt = CylinderCoordConv(useCuda=False).eval()
-	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
+	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
+	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
+	agent.opt = torch.optim.SGD(agent.Qp.parameters(), lr=LR, momentum=0.9)
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
 
@@ -66,6 +66,7 @@ if __name__ == '__main__':
 			episode_reward += reward
 			step += 1
 
+			## Update current lowest
 			current = state[1].mean().item()
 			if current < lowest:
 				lowest = current
@@ -92,14 +93,15 @@ if __name__ == '__main__':
 			## End episode if terminal state
 			if done:
 				break
+
 		agent.decay_epsilon()
-		# initial, final = 0.000, 0.000
-		print(f'#:{episode}, '\
-		 f'I:{round(initial, 2)}, '\
-		 f'Lowest:{round(lowest, 2)}, '\
-		 f'F:{round(current, 2)}, '\
-		 f'Score:{round(episode_reward, 2)}, '\
-		 f'Eps:{round(agent.eps, 2)}')
+		print(
+			f'#:{episode}, '\
+			f'I:{round(initial, 2)}, '\
+			f'Lowest:{round(lowest, 2)}, '\
+			f'F:{round(current, 2)}, '\
+			f'Score:{round(episode_reward, 2)}, '\
+			f'Eps:{round(agent.eps, 2)}')
 
 		writer.add_scalar('train/score', episode_reward, episode)
 		writer.add_scalar('train/episode_length', t, episode)

@@ -121,7 +121,12 @@ class TSCSEnv():
 		self.TSCS = self.getTSCS(self.config)
 		self.RMS = self.getRMS(self.config)
 		self.img = self.getIMG(self.config)
-		state = (self.config, self.TSCS, self.RMS, self.img)
+
+		state = (
+			self.config, 
+			self.TSCS, 
+			self.RMS, 
+			self.img)
 		return state
 
 	def getNextConfig(self, config, action):
