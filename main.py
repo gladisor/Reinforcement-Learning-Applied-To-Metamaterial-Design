@@ -1,5 +1,5 @@
 import gym
-# from env import TSCSEnv
+from env import TSCSEnv
 from agent import Agent
 from models import CylinderCoordConv
 import torch
@@ -18,8 +18,8 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 326
-	EPISODE_LEN = 1000
+	NUM_EPISODES = 300
+	EPISODE_LEN = 500
 	useCuda = False
 
 	## Creating agent object with parameters
@@ -28,57 +28,56 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	## Defining models
-	# agent.Qp, agent.Qt = CylinderCoordConv(useCuda=False), CylinderCoordConv(useCuda=False)
-	# agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
-	# agent.Qt.eval()
-	# agent.Qt.load_state_dict(agent.Qp.state_dict())
-	agent.nActions = 4
+	agent.Qp = CylinderCoordConv(useCuda=False)
+	agent.Qt = CylinderCoordConv(useCuda=False).eval()
+	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
+	agent.Qt.load_state_dict(agent.Qp.state_dict())
+	agent.nActions = 16
 
 	## This is the holder for transition data
-	# agent.Transition = namedtuple('Transition', 
-	# 	('c','tscs','rms','img',
-	# 	'a','r',
-	# 	'c_','tscs_','rms_','img_','done'))
-	agent.Transition = namedtuple(
-		'Transition', ('s','a','r','s_','done'))
+	agent.Transition = namedtuple('Transition', 
+		('c','tscs','rms','img',
+		'a','r',
+		'c_','tscs_','rms_','img_','done'))
+	# agent.Transition = namedtuple(
+	# 	'Transition', ('s','a','r','s_','done'))
 
 	## Creating environment object
-	# env = TSCSEnv()
-	env = gym.make('LunarLander-v2')
+	env = TSCSEnv()
+	# env = gym.make('LunarLander-v2')
 
 	step = 0
 	writer = SummaryWriter()
-	hist = {'score':[], 'length':[]}
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
 		episode_reward = 0
-		# state = env.reset()
-		state = torch.tensor([env.reset()]).float()
+		state = env.reset()
+		# state = torch.tensor([env.reset()]).float()
 
 		## Record initial scattering
-		# initial = state[1].mean().item()
-		# lowest = initial
+		initial = state[1].mean().item()
+		lowest = initial
 		for t in tqdm(range(EPISODE_LEN)):
 			## Select action, observe nextState & reward
 			action = agent.select_action(state)
-			nextState, reward, done, _ = env.step(action)
+			nextState, reward, done = env.step(action)
 
 			episode_reward += reward
 			step += 1
 
-			# current = state[1].mean().item()
-			# if current < lowest:
-			# 	lowest = current
+			current = state[1].mean().item()
+			if current < lowest:
+				lowest = current
 
 			if t == EPISODE_LEN - 1:
 				done = True
 
-			nextState = torch.tensor([nextState]).float()
+			# nextState = torch.tensor([nextState]).float()
 			action = torch.tensor([[action]])
 			reward = torch.tensor([[reward]]).float()
 			done = torch.tensor([done])
-			e = agent.Transition(state, action, reward, nextState, done)
+			e = agent.Transition(*state, action, reward, *nextState, done)
 
 			## Add most recent transition to memory and update model
 			agent.memory.push(e)
@@ -93,27 +92,16 @@ if __name__ == '__main__':
 			## End episode if terminal state
 			if done:
 				break
-
-		# final = state[1].mean().item()
-		initial, final = 0.000, 0.000
+		agent.decay_epsilon()
+		# initial, final = 0.000, 0.000
 		print(f'#:{episode}, '\
-		 # f'I:{round(initial, 2)}, '\
-		 # f'Lowest:{round(lowest, 2)}, '\
-		 # f'F:{round(current, 2)}, '\
+		 f'I:{round(initial, 2)}, '\
+		 f'Lowest:{round(lowest, 2)}, '\
+		 f'F:{round(current, 2)}, '\
 		 f'Score:{round(episode_reward, 2)}, '\
 		 f'Eps:{round(agent.eps, 2)}')
 
 		writer.add_scalar('train/score', episode_reward, episode)
 		writer.add_scalar('train/episode_length', t, episode)
-
-		hist['score'].append(episode_reward)
-		hist['length'].append(t)
-		agent.finish_episode()
-
-	plt.plot(hist['score'])
-	plt.show()
-
-	plt.plot(hist['length'])
-	plt.show()
 
 	torch.save(agent.Qt.state_dict(), 'model.pt')

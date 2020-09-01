@@ -49,16 +49,16 @@ class Agent():
 
 	def extract_tensors(self, batch):
 		## State info
-		# s = (cat(batch.c),cat(batch.tscs),cat(batch.rms),cat(batch.img))
-		s = cat(batch.s)
+		s = (cat(batch.c),cat(batch.tscs),cat(batch.rms),cat(batch.img))
+		# s = cat(batch.s)
 
 		## Action, reward
 		a = cat(batch.a)
 		r = cat(batch.r)
 
 		## Next state info
-		# s_ = (cat(batch.c_),cat(batch.tscs_),cat(batch.rms_),cat(batch.img_))
-		s_ = cat(batch.s_)
+		s_ = (cat(batch.c_),cat(batch.tscs_),cat(batch.rms_),cat(batch.img_))
+		# s_ = cat(batch.s_)
 		done = cat(batch.done)
 
 		if self.useCuda:
@@ -106,7 +106,7 @@ class Agent():
 			self.memory.update_priorities(indices, prios)
 			return loss.item()
 
-	def finish_episode(self):
+	def decay_epsilon(self):
 		"""
 		Used to update hyperparameters every episode
 		"""
