@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 300
+	NUM_EPISODES = 1000
 	EPISODE_LEN = 500
 	useCuda = True
 
