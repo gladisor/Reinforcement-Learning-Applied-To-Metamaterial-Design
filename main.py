@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 3000
+	NUM_EPISODES = 300
 	EPISODE_LEN = 500
 	useCuda = True
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(), 
 		lr=LR, 
-		momentum=0.9)
+		momentum=0.9) ## Try nesterov
 
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
