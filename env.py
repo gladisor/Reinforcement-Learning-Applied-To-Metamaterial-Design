@@ -114,13 +114,16 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
+		OUTSIDE_RANGE_REWARD = -1500
+		ILLEGAL_MOVE_REWARD = -1000
+		DESIRED_RANGE_REWARD = 10000
 		if RMS >= 2: ## Outside acceptable range
 			self.counter += 1
 			if self.counter == 10: ## Above 2 RMS for 10 steps
-				reward = -1000
+				reward = OUTSIDE_RANGE_REWARD
 				done = True
 			else:
-				reward = 0.2**(RMS.item()-1)-1
+				reward = -1
 				done = False
 		elif 0.1 < RMS < 2: ## RMS in good range, reset counter
 			if isValid: ## Good scatter range, not an illegal move
@@ -130,14 +133,15 @@ class TSCSEnv():
 			else: ## Good scatter range but illegal move
 				self.counter += 1
 				if self.counter == 10:
-					reward = -1000
+					reward = ILLEGAL_MOVE_REWARD
 					done = True
 				else:
 					reward = 0.2**(RMS.item()-1)-1
 					done = False
 		elif RMS <= 0.1: ## Optimal config found
-			reward = 10000
+			reward = DESIRED_RANGE_REWARD
 			done = True
+			
 		return reward, done
 
 	def reset(self):
