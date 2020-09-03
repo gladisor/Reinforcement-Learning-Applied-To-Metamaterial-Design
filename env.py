@@ -22,6 +22,10 @@ class TSCSEnv():
 		self.RMS = None
 		self.img = None
 
+		## Counter which tracks number of steps in a row
+		# under 1 RMS
+		self.counter = 0
+
 		## Image transform
 		self.img_dim = 50
 		self.transform = transforms.Compose([
@@ -105,13 +109,34 @@ class TSCSEnv():
 		plt.imshow(self.img.view(self.img_dim, self.img_dim))
 		plt.show()
 
-	def getReward(self, RMS):
+	def getReward(self, RMS, isValid):
 		"""
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		reward = 1 - (RMS/100).pow(0.4).item()
-		return reward
+		# reward = 1 - (RMS/100).pow(0.4).item()
+		if RMS >= 2: ## Outside acceptable range
+			self.counter += 1
+			if self.counter == 10: ## Above 2 RMS for 10 steps
+				reward = -1000
+				done = True
+			else:
+				reward = 0.2**(RMS.item()-1)-1
+				done = False
+		elif 0.1 < RMS < 2: ## RMS in good range, reset counter
+			if isValid: ## Good scatter range, not an illegal move
+				self.counter = 0
+				reward = 0.2**(RMS.item()-1)-1
+				done = False
+			else: ## Good scatter range but 10 illegal moves
+				self.counter += 1
+				if self.counter == 10:
+					reward = -1000
+					done = True
+		elif RMS <= 0.1: ## Optimal config found
+			reward = 10000
+			done = True
+		return reward, done
 
 	def reset(self):
 		"""
@@ -122,6 +147,8 @@ class TSCSEnv():
 		self.RMS = self.getRMS(self.config)
 		self.img = self.getIMG(self.config)
 
+		self.counter = 0
+ 
 		state = (
 			self.config, 
 			self.TSCS, 
@@ -154,17 +181,20 @@ class TSCSEnv():
 		otherwise, reward is calculated by the change in scattering
 		"""
 		nextConfig = self.getNextConfig(self.config, action)
-		if self.validConfig(nextConfig):
+		isValid = self.validConfig(nextConfig)
+
+		if isValid:
 			self.config = nextConfig
 			self.TSCS = self.getTSCS(nextConfig)
 			self.RMS = self.getRMS(nextConfig)
 			self.img = self.getIMG(nextConfig)
-			
-			reward = self.getReward(self.RMS)
-			done = False
-		else:
-			reward = -10.0
-			done = True
+		elif not isValid: ## Invalid next state, do not change state variables
+			self.config = self.config
+			self.TSCS = self.TSCS
+			self.RMS = self.RMS
+			self.img = self.img
+
+		reward, done = self.getReward(self.RMS, isValid)
 
 		nextState = (self.config, self.TSCS, self.RMS, self.img)
 		return nextState, reward, done
