@@ -28,28 +28,25 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	## Defining models
-	# agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
-	# agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
+	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
+	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
 
-	# agent.opt = torch.optim.SGD(
-	# 	agent.Qp.parameters(), 
-	# 	lr=LR, 
-	# 	momentum=0.9) ## Try nesterov
+	agent.opt = torch.optim.Adam(agent.Qp.parameters(), lr=LR)
 
-	# agent.Qt.load_state_dict(agent.Qp.state_dict())
-	agent.nActions = 4
+	agent.Qt.load_state_dict(agent.Qp.state_dict())
+	agent.nActions = 16
 
 	## This is the holder for transition data
-	# agent.Transition = namedtuple('Transition', 
-	# 	('c','tscs','rms','img',
-	# 	'a','r',
-	# 	'c_','tscs_','rms_','img_','done'))
-	agent.Transition = namedtuple(
-		'Transition', ('s','a','r','s_','done'))
+	agent.Transition = namedtuple('Transition', 
+		('c','tscs','rms','img',
+		'a','r',
+		'c_','tscs_','rms_','img_','done'))
+	# agent.Transition = namedtuple(
+	# 	'Transition', ('s','a','r','s_','done'))
 
 	## Creating environment object
-	# env = TSCSEnv()
-	env = gym.make('LunarLander-v2')
+	env = TSCSEnv()
+	# env = gym.make('LunarLander-v2')
 
 	step = 0
 	writer = SummaryWriter()
@@ -57,29 +54,29 @@ if __name__ == '__main__':
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
 		episode_reward = 0
-		# state = env.reset()
-		state = torch.tensor([env.reset()]).float()
+		state = env.reset()
+		# state = torch.tensor([env.reset()]).float()
 
 		## Record initial scattering
-		# initial = state[1].mean().item()
-		# lowest = initial
+		initial = state[1].mean().item()
+		lowest = initial
 		for t in tqdm(range(EPISODE_LEN)):
 			## Select action, observe nextState & reward
 			action = agent.select_action(state)
-			nextState, reward, done, _ = env.step(action)
+			nextState, reward, done = env.step(action)
 
 			episode_reward += reward
 			step += 1
 
-			## Update current lowest
-			# current = state[1].mean().item()
-			# if current < lowest:
-			# 	lowest = current
+			# Update current lowest
+			current = state[1].mean().item()
+			if current < lowest:
+				lowest = current
 
 			if t == EPISODE_LEN - 1:
 				done = True
 
-			nextState = torch.tensor([nextState]).float()
+			# nextState = torch.tensor([nextState]).float()
 			action = torch.tensor([[action]])
 			reward = torch.tensor([[reward]]).float()
 			done = torch.tensor([done])
@@ -102,9 +99,9 @@ if __name__ == '__main__':
 		agent.decay_epsilon()
 		print(
 			f'#:{episode}, '\
-			# f'I:{round(initial, 2)}, '\
-			# f'Lowest:{round(lowest, 2)}, '\
-			# f'F:{round(current, 2)}, '\
+			f'I:{round(initial, 2)}, '\
+			f'Lowest:{round(lowest, 2)}, '\
+			f'F:{round(current, 2)}, '\
 			f'Score:{round(episode_reward, 2)}, '\
 			f'Eps:{round(agent.eps, 2)}')
 
