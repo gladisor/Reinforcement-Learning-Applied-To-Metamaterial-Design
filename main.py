@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
 	## Hyperparameters
-	GAMMA = 0.99
+	GAMMA = 0.85
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.99
@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 100
+	NUM_EPISODES = 3000
 	EPISODE_LEN = 100
 	useCuda = True
 
