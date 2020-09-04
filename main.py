@@ -18,8 +18,8 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 500
-	EPISODE_LEN = 200
+	NUM_EPISODES = 1000
+	EPISODE_LEN = 100
 	useCuda = True
 
 	## Creating agent object with parameters
