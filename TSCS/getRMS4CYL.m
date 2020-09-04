@@ -1,4 +1,4 @@
-function Q_RMS = getTSCS4CYL(x1, y1, x2, y2, x3, y3, x4, y4)
+function Q_RMS = getRMS4CYL(x1, y1, x2, y2, x3, y3, x4, y4)
 
 a = 1;
 aa = 1;

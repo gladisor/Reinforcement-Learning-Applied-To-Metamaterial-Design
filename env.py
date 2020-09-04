@@ -14,7 +14,7 @@ class TSCSEnv():
 		self.eng = matlab.engine.start_matlab()
 		self.eng.addpath('TSCS')
 		self.nCyl = 4
-		self.stepSize = 0.5
+		self.stepSize = 1
 
 		## State variables
 		self.config = None
@@ -49,7 +49,7 @@ class TSCSEnv():
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
 						d = torch.sqrt((x2-x1)**2 + (y2-y1)**2)
-						if d <= 1:
+						if d <= 2:
 							overlap = True
 		return withinBounds and not overlap
 
@@ -83,11 +83,12 @@ class TSCSEnv():
 		ax.axis('equal')
 		ax.set_xlim(xmin=-6, xmax=6)
 		ax.set_ylim(ymin=-6, ymax=6)
-		ax.axis('off')
+		ax.grid()
+		# ax.axis('off')
 
 		coords = config.view(self.nCyl, 2)
 		for cyl in range(self.nCyl):
-			ax.add_artist(Circle((coords[cyl, 0], coords[cyl, 1]), radius=0.5))
+			ax.add_artist(Circle((coords[cyl, 0], coords[cyl, 1]), radius=1))
 
 		## Convert to tensor
 		buf = io.BytesIO()
@@ -114,33 +115,39 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		OUTSIDE_RANGE_REWARD = -1500
-		ILLEGAL_MOVE_REWARD = -1000
-		DESIRED_RANGE_REWARD = 10000
-		if RMS >= 2: ## Outside acceptable range
-			self.counter += 1
-			if self.counter == 10: ## Above 2 RMS for 10 steps
-				reward = OUTSIDE_RANGE_REWARD
-				done = True
-			else:
-				reward = -1
-				done = False
-		elif 0.1 < RMS < 2: ## RMS in good range, reset counter
-			if isValid: ## Good scatter range, not an illegal move
-				self.counter = 0
-				reward = 0.2**(RMS.item()-1)-1
-				done = False
-			else: ## Good scatter range but illegal move
-				self.counter += 1
-				if self.counter == 10:
-					reward = ILLEGAL_MOVE_REWARD
-					done = True
-				else:
-					reward = 0.2**(RMS.item()-1)-1
-					done = False
-		elif RMS <= 0.1: ## Optimal config found
-			reward = DESIRED_RANGE_REWARD
-			done = True
+		if isValid:
+			reward = 0.2**(RMS.item()-1)-1
+		else:
+			reward = -1
+
+		done = False
+		# OUTSIDE_RANGE_REWARD = -1500
+		# ILLEGAL_MOVE_REWARD = -1000
+		# DESIRED_RANGE_REWARD = 10000
+		# if RMS >= 2: ## Outside acceptable range
+		# 	self.counter += 1
+		# 	if self.counter == 10: ## Above 2 RMS for 10 steps
+		# 		reward = OUTSIDE_RANGE_REWARD
+		# 		done = True
+		# 	else:
+		# 		reward = -1
+		# 		done = False
+		# elif 0.1 < RMS < 2: ## RMS in good range, reset counter
+		# 	if isValid: ## Good scatter range, not an illegal move
+		# 		self.counter = 0
+		# 		reward = 0.2**(RMS.item()-1)-1
+		# 		done = False
+		# 	else: ## Good scatter range but illegal move
+		# 		self.counter += 1
+		# 		if self.counter == 10:
+		# 			reward = ILLEGAL_MOVE_REWARD
+		# 			done = True
+		# 		else:
+		# 			reward = 0.2**(RMS.item()-1)-1
+		# 			done = False
+		# elif RMS <= 0.1: ## Optimal config found
+		# 	reward = DESIRED_RANGE_REWARD
+		# 	done = True
 			
 		return reward, done
 
@@ -186,19 +193,18 @@ class TSCSEnv():
 		we revert back to previous state and give negative reward
 		otherwise, reward is calculated by the change in scattering
 		"""
-		nextConfig = self.getNextConfig(self.config, action)
+		prevConfig = self.config
+		nextConfig = self.getNextConfig(self.config.clone(), action)
 		isValid = self.validConfig(nextConfig)
 
 		if isValid:
 			self.config = nextConfig
-			self.TSCS = self.getTSCS(nextConfig)
-			self.RMS = self.getRMS(nextConfig)
-			self.img = self.getIMG(nextConfig)
-		elif not isValid: ## Invalid next state, do not change state variables
-			self.config = self.config
-			self.TSCS = self.TSCS
-			self.RMS = self.RMS
-			self.img = self.img
+		else: ## Invalid next state, do not change state variables
+			self.config = prevConfig
+
+		self.TSCS = self.getTSCS(self.config)
+		self.RMS = self.getRMS(self.config)
+		self.img = self.getIMG(self.config)
 
 		reward, done = self.getReward(self.RMS, isValid)
 
@@ -210,11 +216,20 @@ if __name__ == '__main__':
 	env = TSCSEnv()
 	state = env.reset()
 
-	for t in range(1000):
-		env.render()
+	plt.ion()
+	fig = plt.figure()
+	ax = fig.add_subplot()
+	myobj = ax.imshow(state[3].view(50, 50))
+
+	for t in range(100):
 		action = np.random.randint(16)
+		# action = int(input("ACTION: "))
 		print(f"Action: {action}")
 		state, reward, done = env.step(action)
+		myobj.set_data(state[3].view(50, 50))
+		fig.canvas.draw()
+		fig.canvas.flush_events()
+
 		print(f"RMS: {round(state[2].item(),2)}")
 		print(f"Reward: {reward}")
 		if done:

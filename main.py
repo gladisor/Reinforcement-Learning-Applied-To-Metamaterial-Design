@@ -14,12 +14,12 @@ if __name__ == '__main__':
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.99
-	TARGET_UPDATE = 10 ## Default 1500
+	TARGET_UPDATE = 1000 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	NUM_EPISODES = 500
-	EPISODE_LEN = 500
+	EPISODE_LEN = 200
 	useCuda = True
 
 	## Creating agent object with parameters
@@ -27,10 +27,10 @@ if __name__ == '__main__':
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
-	## Defining models
+	# Defining models
 	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
 	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
-	agent.opt = torch.optim.SGD(agent.Qp.parameters(), lr=LR, momentum=0.9)
+	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
 
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
