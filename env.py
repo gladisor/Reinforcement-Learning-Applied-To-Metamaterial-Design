@@ -220,10 +220,11 @@ if __name__ == '__main__':
 	fig = plt.figure()
 	ax = fig.add_subplot()
 	myobj = ax.imshow(state[3].view(50, 50))
+	print(f"RMS: {round(state[2].item(),2)}")
 
 	for t in range(100):
-		action = np.random.randint(16)
-		# action = int(input("ACTION: "))
+		# action = np.random.randint(16)
+		action = int(input("ACTION: "))
 		print(f"Action: {action}")
 		state, reward, done = env.step(action)
 		myobj.set_data(state[3].view(50, 50))

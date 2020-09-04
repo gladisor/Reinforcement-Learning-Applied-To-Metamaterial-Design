@@ -18,7 +18,7 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 1000
+	NUM_EPISODES = 100
 	EPISODE_LEN = 100
 	useCuda = True
 
@@ -40,12 +40,9 @@ if __name__ == '__main__':
 		('c','tscs','rms','img',
 		'a','r',
 		'c_','tscs_','rms_','img_','done'))
-	# agent.Transition = namedtuple(
-	# 	'Transition', ('s','a','r','s_','done'))
 
 	## Creating environment object
 	env = TSCSEnv()
-	# env = gym.make('LunarLander-v2')
 
 	step = 0
 	writer = SummaryWriter()
@@ -54,7 +51,6 @@ if __name__ == '__main__':
 		## Reset reward and env
 		episode_reward = 0
 		state = env.reset()
-		# state = torch.tensor([env.reset()]).float()
 
 		## Record initial scattering
 		initial = state[1].mean().item()
@@ -75,7 +71,6 @@ if __name__ == '__main__':
 			if t == EPISODE_LEN - 1:
 				done = True
 
-			# nextState = torch.tensor([nextState]).float()
 			action = torch.tensor([[action]])
 			reward = torch.tensor([[reward]]).float()
 			done = torch.tensor([done])
@@ -106,6 +101,5 @@ if __name__ == '__main__':
 
 		writer.add_scalar('train/score', episode_reward, episode)
 		writer.add_scalar('train/episode_length', t, episode)
-		# writer.add_scalar('train/lowest', lowest, episode)
-
+		writer.add_scalar('train/lowest', lowest, episode)
 	torch.save(agent.Qt.state_dict(), 'model.pt')
