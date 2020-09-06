@@ -53,8 +53,8 @@ class Agent():
 			cat(batch.c),
 			cat(batch.tscs),
 			cat(batch.rms),
-			cat(batch.img))
-		# s = cat(batch.s)
+			cat(batch.img),
+			cat(batch.time))
 
 		## Action, reward
 		a = cat(batch.a)
@@ -65,8 +65,9 @@ class Agent():
 			cat(batch.c_),
 			cat(batch.tscs_),
 			cat(batch.rms_),
-			cat(batch.img_))
-		# s_ = cat(batch.s_)
+			cat(batch.img_),
+			cat(batch.time_))
+		
 		done = cat(batch.done)
 
 		if self.useCuda:
@@ -75,7 +76,7 @@ class Agent():
 			done = done.cuda()
 		return s, a, r, s_, done
 
-	def optimize_model(self, e):
+	def optimize_model(self):
 		"""
 		Bellman update with prioritized sampling
 		"""

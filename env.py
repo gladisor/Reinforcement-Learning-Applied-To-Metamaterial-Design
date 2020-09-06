@@ -13,18 +13,17 @@ class TSCSEnv():
 		## Matlab interface
 		self.eng = matlab.engine.start_matlab()
 		self.eng.addpath('TSCS')
+
+		## Hyperparameters
 		self.nCyl = 4
-		self.stepSize = 1
+		self.stepSize = 0.5
 
 		## State variables
 		self.config = None
 		self.TSCS = None
 		self.RMS = None
 		self.img = None
-
-		## Counter which tracks number of steps in a row
-		# under 1 RMS
-		self.counter = 0
+		self.counter = None
 
 		## Image transform
 		self.img_dim = 50
@@ -84,7 +83,6 @@ class TSCSEnv():
 		ax.set_xlim(xmin=-6, xmax=6)
 		ax.set_ylim(ymin=-6, ymax=6)
 		ax.grid()
-		# ax.axis('off')
 
 		coords = config.view(self.nCyl, 2)
 		for cyl in range(self.nCyl):
@@ -103,42 +101,19 @@ class TSCSEnv():
 		plt.close(fig)
 		return X.unsqueeze(0)
 
-	def render(self):
-		"""
-		Shows config in image form to the screen
-		"""
-		plt.imshow(self.img.view(self.img_dim, self.img_dim))
-		plt.show()
+	def getTime(self):
+		return self.counter/100
 
 	def getReward(self, RMS, isValid):
 		"""
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		OUTSIDE_RANGE_REWARD = -1000
-		ILLEGAL_MOVE_REWARD = -1
-		DESIRED_RANGE_REWARD = 10000
-		if RMS >= 2: ## Outside acceptable range
-			self.counter += 1
-			if self.counter >= 10:
-				reward = OUTSIDE_RANGE_REWARD
-				done = True
-			else:
-				reward = -1
-				done = False
-
-		elif 0.1 < RMS < 2: ## RMS in good range, reset counter
-			if isValid:
-				self.counter = 0
-				reward = 0.2**(RMS.item()-1)-1
-			else: ## Good scatter range but illegal move
-				reward = ILLEGAL_MOVE_REWARD
-			done = False
-
-		else: ## Optimal config found
-			reward = DESIRED_RANGE_REWARD
-			done = True
-
+		if isValid:
+			reward = 0.2**(RMS.item()-1)-1
+		else:
+			reward = -1
+		done = False
 		return reward, done
 
 	def reset(self):
@@ -149,14 +124,15 @@ class TSCSEnv():
 		self.TSCS = self.getTSCS(self.config)
 		self.RMS = self.getRMS(self.config)
 		self.img = self.getIMG(self.config)
-
-		self.counter = 0
+		self.counter = torch.tensor([[0.0]])
+		time = self.getTime()
  
 		state = (
 			self.config, 
 			self.TSCS, 
 			self.RMS, 
-			self.img)
+			self.img,
+			time)
 		return state
 
 	def getNextConfig(self, config, action):
@@ -183,7 +159,7 @@ class TSCSEnv():
 		we revert back to previous state and give negative reward
 		otherwise, reward is calculated by the change in scattering
 		"""
-		prevConfig = self.config
+		prevConfig = self.config.clone()
 		nextConfig = self.getNextConfig(self.config.clone(), action)
 		isValid = self.validConfig(nextConfig)
 
@@ -195,10 +171,17 @@ class TSCSEnv():
 		self.TSCS = self.getTSCS(self.config)
 		self.RMS = self.getRMS(self.config)
 		self.img = self.getIMG(self.config)
+		self.counter += 1
+		time = self.getTime()
 
 		reward, done = self.getReward(self.RMS, isValid)
 
-		nextState = (self.config, self.TSCS, self.RMS, self.img)
+		nextState = (
+			self.config,
+			self.TSCS,
+			self.RMS,
+			self.img,
+			time)
 		return nextState, reward, done
 
 if __name__ == '__main__':
@@ -213,8 +196,8 @@ if __name__ == '__main__':
 	print(f"RMS: {round(state[2].item(),2)}")
 
 	for t in range(100):
-		# action = np.random.randint(16)
-		action = int(input("ACTION: "))
+		action = np.random.randint(16)
+		# action = int(input("ACTION: "))
 		print(f"Action: {action}")
 		state, reward, done = env.step(action)
 		myobj.set_data(state[3].view(50, 50))

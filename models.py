@@ -16,6 +16,30 @@ class DQN(nn.Module):
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
+
+class CylinderNet(nn.Module):
+	def __init__(self, useCuda):
+		super(CylinderNet, self).__init__()
+		self.useCuda = useCuda
+		self.fc1 = nn.Linear(21, 128)
+		self.fc2 = nn.Linear(128, 128)
+		self.v = nn.Linear(128, 1)
+		self.adv = nn.Linear(128, 16)
+
+	def forward(self, s):
+		config, tscs, rms, time = s
+		if self.useCuda:
+			config = config.cuda()
+			tscs = tscs.cuda()
+			rms = rms.cuda()
+			time = time.cuda()
+
+		x = torch.cat([config, tscs, rms, time], dim=-1)
+		x = relu(self.fc1(x))
+		x = relu(self.fc2(x))
+		a = self.adv(x)
+		q = self.v(x) + a - a.mean(-1, keepdim=True)
+		return q
 		
 class CylinderCoordConv(nn.Module):
 	def __init__(self, useCuda):
@@ -28,28 +52,29 @@ class CylinderCoordConv(nn.Module):
 		self.conv2 = nn.Conv2d(8, 16, kernel_size=10, stride=2)
 		self.flat = nn.Flatten()
 		## Linear layers
-		self.fc1 = nn.Linear(596, 256)
+		self.fc1 = nn.Linear(597, 256)
 		self.fc2 = nn.Linear(256, 128)
 		self.v = nn.Linear(128, 1)
 		self.adv = nn.Linear(128, 16)
 
 	def forward(self, s):
-		config, tscs, rms, img = s
+		config, tscs, rms, img, time = s
 		if self.useCuda:
 			config = config.cuda()
 			tscs = tscs.cuda()
 			rms = rms.cuda()
 			img = img.cuda()
+			time = time.cuda()
 			
 		x = self.addlayers(img)
 		x = relu(self.conv1(x))
 		x = relu(self.conv2(x))
 		x = self.flat(x)
-		x = torch.cat([x, config, tscs, rms], dim=-1)
+		x = torch.cat([x, config, tscs, rms, time], dim=-1)
 		x = relu(self.fc1(x))
 		x = relu(self.fc2(x))
 		a = self.adv(x)
-		q = self.v(x) - a + a.mean(-1, keepdim=True)
+		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
 
 if __name__ == '__main__':		
@@ -57,10 +82,10 @@ if __name__ == '__main__':
 
 	env = TSCSEnv()
 	state = env.reset()
-	config, tscs, rms, img = state
-	print(config.shape, tscs.shape, rms.shape, img.shape)
+	config, tscs, rms, img, time = state
+	print(config.shape, tscs.shape, rms.shape, img.shape, time.shape)
 
-	q = CylinderCoordConv()
+	q = CylinderCoordConv(useCuda=True).cuda()
 	print(q)
 	out = q(state)
 	print(out.shape)

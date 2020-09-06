@@ -10,15 +10,15 @@ from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
 	## Hyperparameters
-	GAMMA = 0.85
+	GAMMA = 0.99
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.99
-	TARGET_UPDATE = 1000 ## Default 1500
+	TARGET_UPDATE = 10 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 3000
+	NUM_EPISODES = 1000
 	EPISODE_LEN = 100
 	useCuda = True
 
@@ -30,16 +30,16 @@ if __name__ == '__main__':
 	# Defining models
 	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
 	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
-	agent.opt = torch.optim.RMSprop(agent.Qp.parameters(), lr=LR)
+	agent.opt = torch.optim.Adam(agent.Qp.parameters(), lr=LR)
 
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
 
 	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
-		('c','tscs','rms','img',
+		('c','tscs','rms','img','time',
 		'a','r',
-		'c_','tscs_','rms_','img_','done'))
+		'c_','tscs_','rms_','img_','time_','done'))
 
 	## Creating environment object
 	env = TSCSEnv()
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
 			## Add most recent transition to memory and update model
 			agent.memory.push(e)
-			loss = agent.optimize_model(e)
+			loss = agent.optimize_model()
 			state = nextState
 
 			## Copy policy weights over to target net
@@ -100,6 +100,5 @@ if __name__ == '__main__':
 			f'Eps:{round(agent.eps, 2)}')
 
 		writer.add_scalar('train/score', episode_reward, episode)
-		writer.add_scalar('train/episode_length', t, episode)
 		writer.add_scalar('train/lowest', lowest, episode)
 	torch.save(agent.Qt.state_dict(), 'model.pt')
