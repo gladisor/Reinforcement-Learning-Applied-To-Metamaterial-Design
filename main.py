@@ -18,6 +18,8 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
+	MOMENTUM = 0.9
+	WEIGHT_DECAY = 0.1
 	NUM_EPISODES = 3000
 	EPISODE_LEN = 100
 	useCuda = False
@@ -33,9 +35,7 @@ if __name__ == '__main__':
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
 		lr=LR,
-		momentum=0.9,
-		weight_decay=0.0004,
-		nesterov=True)
+		momentum=MOMENTUM)
 
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
@@ -50,7 +50,8 @@ if __name__ == '__main__':
 	env = TSCSEnv()
 
 	step = 0
-	writer = SummaryWriter()
+	writer = SummaryWriter(
+		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env

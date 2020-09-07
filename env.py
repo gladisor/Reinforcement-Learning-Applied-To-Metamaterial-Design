@@ -113,6 +113,7 @@ class TSCSEnv():
 			reward = 0.2**(RMS.item()-1)-1
 		else:
 			reward = -1
+			
 		done = False
 		return reward, done
 
@@ -126,7 +127,7 @@ class TSCSEnv():
 		# self.img = self.getIMG(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
- 
+
 		state = (
 			self.config, 
 			self.TSCS, 
@@ -192,19 +193,23 @@ if __name__ == '__main__':
 	plt.ion()
 	fig = plt.figure()
 	ax = fig.add_subplot()
-	myobj = ax.imshow(state[3].view(50, 50))
-	print(f"RMS: {round(state[2].item(),2)}")
+
+	img = env.getIMG(state[0])
+	myobj = ax.imshow(img.view(env.img_dim, env.img_dim))
+	print(f"RMS: {round(state[2].item(), 2)}")
 
 	for t in range(100):
 		action = np.random.randint(16)
-		# action = int(input("ACTION: "))
 		print(f"Action: {action}")
 		state, reward, done = env.step(action)
-		myobj.set_data(state[3].view(50, 50))
+
+		img = env.getIMG(state[0])
+		myobj.set_data(img.view(env.img_dim, env.img_dim))
 		fig.canvas.draw()
 		fig.canvas.flush_events()
+		plt.pause(0.05)
 
-		print(f"RMS: {round(state[2].item(),2)}")
+		print(f"RMS: {round(state[2].item(), 2)}")
 		print(f"Reward: {reward}")
 		if done:
 			break

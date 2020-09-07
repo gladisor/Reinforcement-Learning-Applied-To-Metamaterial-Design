@@ -93,11 +93,12 @@ class Agent():
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-
 				target_q_values = torch.zeros(self.batch_size, 1)
+				
 				if self.useCuda:
 					target_q_values = target_q_values.cuda()
 					weights = weights.cuda()
+
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
