@@ -53,7 +53,6 @@ class Agent():
 			cat(batch.c),
 			cat(batch.tscs),
 			cat(batch.rms),
-			cat(batch.img),
 			cat(batch.time))
 
 		## Action, reward
@@ -65,7 +64,6 @@ class Agent():
 			cat(batch.c_),
 			cat(batch.tscs_),
 			cat(batch.rms_),
-			cat(batch.img_),
 			cat(batch.time_))
 		
 		done = cat(batch.done)

@@ -123,15 +123,15 @@ class TSCSEnv():
 		self.config = self.getConfig()
 		self.TSCS = self.getTSCS(self.config)
 		self.RMS = self.getRMS(self.config)
-		self.img = self.getIMG(self.config)
+		# self.img = self.getIMG(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
  
 		state = (
 			self.config, 
 			self.TSCS, 
-			self.RMS, 
-			self.img,
+			self.RMS,
+			# self.img,
 			time)
 		return state
 
@@ -170,7 +170,7 @@ class TSCSEnv():
 
 		self.TSCS = self.getTSCS(self.config)
 		self.RMS = self.getRMS(self.config)
-		self.img = self.getIMG(self.config)
+		# self.img = self.getIMG(self.config)
 		self.counter += 1
 		time = self.getTime()
 
@@ -180,7 +180,7 @@ class TSCSEnv():
 			self.config,
 			self.TSCS,
 			self.RMS,
-			self.img,
+			# self.img,
 			time)
 		return nextState, reward, done
 

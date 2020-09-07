@@ -1,7 +1,7 @@
 import gym
 from env import TSCSEnv
 from agent import Agent
-from models import CylinderCoordConv
+from models import CylinderCoordConv, CylinderNet
 import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
 	## Hyperparameters
-	GAMMA = 0.99
+	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.99
@@ -18,9 +18,9 @@ if __name__ == '__main__':
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
-	NUM_EPISODES = 1000
+	NUM_EPISODES = 3000
 	EPISODE_LEN = 100
-	useCuda = True
+	useCuda = False
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -28,18 +28,23 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	# Defining models
-	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
-	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
-	agent.opt = torch.optim.Adam(agent.Qp.parameters(), lr=LR)
+	agent.Qp = CylinderNet(useCuda=useCuda)
+	agent.Qt = CylinderNet(useCuda=useCuda).eval()
+	agent.opt = torch.optim.SGD(
+		agent.Qp.parameters(),
+		lr=LR,
+		momentum=0.9,
+		weight_decay=0.0004,
+		nesterov=True)
 
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
 
 	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
-		('c','tscs','rms','img','time',
+		('c','tscs','rms','time',
 		'a','r',
-		'c_','tscs_','rms_','img_','time_','done'))
+		'c_','tscs_','rms_','time_','done'))
 
 	## Creating environment object
 	env = TSCSEnv()
