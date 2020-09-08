@@ -21,7 +21,7 @@ if __name__ == '__main__':
 	MOMENTUM = 0.9
 	NUM_EPISODES = 10_000
 	EPISODE_LEN = 100
-	useCuda = False
+	useCuda = True
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -29,8 +29,8 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	# Defining models
-	agent.Qp = CylinderNet(useCuda=useCuda)
-	agent.Qt = CylinderNet(useCuda=useCuda).eval()
+	agent.Qp = CylinderNet(useCuda=useCuda).cuda()
+	agent.Qt = CylinderNet(useCuda=useCuda).eval().cuda()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
 		lr=LR,
