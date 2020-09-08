@@ -1,7 +1,7 @@
 import gym
 from env import TSCSEnv
 from agent import Agent
-from models import CylinderCoordConv
+from models import CylinderCoordConv, CylinderNet
 import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
@@ -13,13 +13,14 @@ if __name__ == '__main__':
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY = 0.99
+	EPS_DECAY = 0.998
 	TARGET_UPDATE = 10 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	MOMENTUM = 0.9
 	NUM_EPISODES = 3000
+	NUM_EPISODES = 30_000
 	EPISODE_LEN = 100
 	useCuda = True
 
@@ -29,8 +30,8 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
 
 	# Defining models
-	agent.Qp = CylinderCoordConv(useCuda=useCuda).cuda()
-	agent.Qt = CylinderCoordConv(useCuda=useCuda).eval().cuda()
+	agent.Qp = CylinderNet(useCuda=useCuda).cuda()
+	agent.Qt = CylinderNet(useCuda=useCuda).eval().cuda()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
 		lr=LR,
@@ -41,16 +42,16 @@ if __name__ == '__main__':
 
 	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
-		('c','tscs','rms','img','time', ##State
+		('c','tscs','rms','time',
 		'a','r',
-		'c_','tscs_','rms_','img_','time_','done'))
+		'c_','tscs_','rms_','time_','done'))
 
 	## Creating environment object
 	env = TSCSEnv()
 
 	step = 0
 	writer = SummaryWriter(
-		f'image_net_runs/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate')
+		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-1hidden')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env

@@ -53,7 +53,6 @@ class Agent():
 			cat(batch.c),
 			cat(batch.tscs),
 			cat(batch.rms),
-			cat(batch.img),
 			cat(batch.time))
 
 		## Action, reward
@@ -65,7 +64,6 @@ class Agent():
 			cat(batch.c_),
 			cat(batch.tscs_),
 			cat(batch.rms_),
-			cat(batch.img_),
 			cat(batch.time_))
 		
 		done = cat(batch.done)
@@ -95,11 +93,12 @@ class Agent():
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-
 				target_q_values = torch.zeros(self.batch_size, 1)
+				
 				if self.useCuda:
 					target_q_values = target_q_values.cuda()
 					weights = weights.cuda()
+
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
