@@ -48,7 +48,7 @@ class TSCSEnv():
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
 						d = torch.sqrt((x2-x1)**2 + (y2-y1)**2)
-						if d <= 2:
+						if d <= 2.1:
 							overlap = True
 		return withinBounds and not overlap
 
