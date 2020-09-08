@@ -13,14 +13,13 @@ if __name__ == '__main__':
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY = 0.99
+	EPS_DECAY = 0.998
 	TARGET_UPDATE = 10 ## Default 1500
 	MEMORY_SIZE = 100_000 ## Default 10_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	MOMENTUM = 0.9
-	WEIGHT_DECAY = 0.1
-	NUM_EPISODES = 3000
+	NUM_EPISODES = 10_000
 	EPISODE_LEN = 100
 	useCuda = False
 
@@ -51,7 +50,7 @@ if __name__ == '__main__':
 
 	step = 0
 	writer = SummaryWriter(
-		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate')
+		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-1hidden')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
@@ -74,7 +73,7 @@ if __name__ == '__main__':
 			if current < lowest:
 				lowest = current
 
-			if t == EPISODE_LEN - 1:
+			if t == EPISODE_LEN:
 				done = True
 
 			action = torch.tensor([[action]])
