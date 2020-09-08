@@ -48,7 +48,7 @@ class TSCSEnv():
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
 						d = torch.sqrt((x2-x1)**2 + (y2-y1)**2)
-						if d <= 2:
+						if d <= 2.1: ## Add small constant
 							overlap = True
 		return withinBounds and not overlap
 
@@ -203,6 +203,7 @@ if __name__ == '__main__':
 		myobj.set_data(state[3].view(50, 50))
 		fig.canvas.draw()
 		fig.canvas.flush_events()
+		plt.pause(0.05)
 
 		print(f"RMS: {round(state[2].item(),2)}")
 		print(f"Reward: {reward}")
