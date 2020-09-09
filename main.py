@@ -14,12 +14,11 @@ if __name__ == '__main__':
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.998
-	TARGET_UPDATE = 10 ## Default 1500
-	MEMORY_SIZE = 100_000 ## Default 10_000
+	TARGET_UPDATE = 10
+	MEMORY_SIZE = 100_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	MOMENTUM = 0.9
-	NUM_EPISODES = 3000
 	NUM_EPISODES = 30_000
 	EPISODE_LEN = 100
 	useCuda = True
@@ -51,7 +50,7 @@ if __name__ == '__main__':
 
 	step = 0
 	writer = SummaryWriter(
-		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-1hidden')
+		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-2hidden')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env

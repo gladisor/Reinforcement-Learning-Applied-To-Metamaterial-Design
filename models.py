@@ -22,6 +22,7 @@ class CylinderNet(nn.Module):
 		super(CylinderNet, self).__init__()
 		self.useCuda = useCuda
 		self.fc1 = nn.Linear(21, 128)
+		self.fc2 = nn.Linear(128, 128)
 		self.v = nn.Linear(128, 1)
 		self.adv = nn.Linear(128, 16)
 
@@ -35,6 +36,7 @@ class CylinderNet(nn.Module):
 
 		x = torch.cat([config, tscs, rms, time], dim=-1)
 		x = relu(self.fc1(x))
+		x = relu(self.fc2(x))
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
