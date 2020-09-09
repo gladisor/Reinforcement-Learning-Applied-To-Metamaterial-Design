@@ -18,7 +18,7 @@ class DQN(nn.Module):
 		return q
 
 class CylinderNet(nn.Module):
-	def __init__(self, useCuda, h_size, n_hidden):
+	def __init__(self, h_size, n_hidden, useCuda):
 		super(CylinderNet, self).__init__()
 		self.useCuda = useCuda
 
