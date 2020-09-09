@@ -18,13 +18,16 @@ class DQN(nn.Module):
 		return q
 
 class CylinderNet(nn.Module):
-	def __init__(self, useCuda):
+	def __init__(self, useCuda, h_size, n_hidden):
 		super(CylinderNet, self).__init__()
 		self.useCuda = useCuda
-		self.fc1 = nn.Linear(21, 128)
-		self.fc2 = nn.Linear(128, 128)
-		self.v = nn.Linear(128, 1)
-		self.adv = nn.Linear(128, 16)
+
+		self.fc = nn.Linear(21, h_size)
+		self.hidden = nn.ModuleList()
+		for _ in range(n_hidden):
+			self.hidden.append(nn.Linear(h_size, h_size))
+		self.v = nn.Linear(h_size, 1)
+		self.adv = nn.Linear(h_size, 16)
 
 	def forward(self, s):
 		config, tscs, rms, time = s
@@ -35,8 +38,8 @@ class CylinderNet(nn.Module):
 			time = time.cuda()
 
 		x = torch.cat([config, tscs, rms, time], dim=-1)
-		x = relu(self.fc1(x))
-		x = relu(self.fc2(x))
+		for layer in self.hidden:
+			x = relu(layer(x))
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q

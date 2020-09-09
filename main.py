@@ -21,16 +21,19 @@ if __name__ == '__main__':
 	MOMENTUM = 0.9
 	NUM_EPISODES = 30_000
 	EPISODE_LEN = 100
-	useCuda = True
+	USE_CUDA = True
+	H_SIZE = 128
+	N_HIDDEN = 3
 
 	## Creating agent object with parameters
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
-		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=useCuda)
+		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=USE_CUDA)
 
 	# Defining models
-	agent.Qp = CylinderNet(useCuda=useCuda).cuda()
-	agent.Qt = CylinderNet(useCuda=useCuda).eval().cuda()
+	agent.Qp = CylinderNet(useCuda=USE_CUDA, H_SIZE, N_HIDDEN).cuda()
+	agent.Qt = CylinderNet(useCuda=USE_CUDA, H_SIZE, N_HIDDEN).cuda()
+	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
 		lr=LR,
@@ -50,7 +53,7 @@ if __name__ == '__main__':
 
 	step = 0
 	writer = SummaryWriter(
-		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-2hidden')
+		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-3hidden')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env

@@ -9,14 +9,14 @@ import io
 ## 4 Cylinder TSCS
 class TSCSEnv():
 	"""docstring for TSCSEnv"""
-	def __init__(self):
+	def __init__(self, nCyl=4, stepSize=0.5):
 		## Matlab interface
 		self.eng = matlab.engine.start_matlab()
 		self.eng.addpath('TSCS')
 
 		## Hyperparameters
-		self.nCyl = 4
-		self.stepSize = 0.5
+		self.nCyl = nCyl
+		self.stepSize = stepSize
 
 		## State variables
 		self.config = None
