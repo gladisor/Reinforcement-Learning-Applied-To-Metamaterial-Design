@@ -16,9 +16,9 @@ from models import DQN
 class Agent():
 	def __init__(self, 
 			gamma, eps, eps_end, eps_decay, 
-			memory_size, batch_size, lr, useCuda):
+			memory_size, batch_size, lr):
 
-		## Networks
+		## Networks -- Change this to custom nets
 		self.Qp = DQN()
 		self.opt = torch.optim.RMSprop(self.Qp.parameters(), lr=lr)
 		self.Qt = DQN()
@@ -32,7 +32,6 @@ class Agent():
 		self.eps_decay = eps_decay
 		self.memory = NaivePrioritizedBuffer(memory_size)
 		self.batch_size = batch_size
-		self.useCuda = useCuda
 		self.Transition = None
 		self.nActions = None
 
@@ -53,7 +52,6 @@ class Agent():
 			cat(batch.c),
 			cat(batch.tscs),
 			cat(batch.rms),
-			cat(batch.img),
 			cat(batch.time))
 
 		## Action, reward
@@ -65,12 +63,11 @@ class Agent():
 			cat(batch.c_),
 			cat(batch.tscs_),
 			cat(batch.rms_),
-			cat(batch.img_),
 			cat(batch.time_))
 		
 		done = cat(batch.done)
 
-		if self.useCuda:
+		if next(self.Qp.parameters()).is_cuda:
 			a = a.cuda()
 			r = r.cuda()
 			done = done.cuda()
@@ -95,11 +92,13 @@ class Agent():
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-
 				target_q_values = torch.zeros(self.batch_size, 1)
-				if self.useCuda:
+				
+				if next(self.Qp.parameters()).is_cuda:
 					target_q_values = target_q_values.cuda()
 					weights = weights.cuda()
+
+				# target_q_values = r + (1 - done) * self.gamma * maxQ
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
 
