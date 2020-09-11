@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	USE_CUDA = False
 	H_SIZE = 128
 	N_HIDDEN = 1
-	STEP_SIZE = 0.25
+	STEP_SIZE = 0.5
 
 	## Creating agent object with parameters
 	agent = Agent(
