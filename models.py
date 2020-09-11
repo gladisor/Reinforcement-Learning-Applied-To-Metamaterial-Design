@@ -18,10 +18,8 @@ class DQN(nn.Module):
 		return q
 
 class CylinderNet(nn.Module):
-	def __init__(self, h_size, n_hidden, useCuda):
+	def __init__(self, h_size, n_hidden):
 		super(CylinderNet, self).__init__()
-		self.useCuda = useCuda
-
 		self.fc = nn.Linear(21, h_size)
 		self.hidden = nn.ModuleList()
 		for _ in range(n_hidden):
@@ -30,16 +28,14 @@ class CylinderNet(nn.Module):
 		self.adv = nn.Linear(h_size, 16)
 
 	def forward(self, s):
-		config, tscs, rms, time = s
-		if self.useCuda:
-			config = config.cuda()
-			tscs = tscs.cuda()
-			rms = rms.cuda()
-			time = time.cuda()
+		x = torch.cat([*s], dim=-1)
+		if next(self.parameters()).is_cuda:
+			x = x.cuda()
 
-		x = torch.cat([config, tscs, rms, time], dim=-1)
+		x = relu(self.fc(x))
 		for layer in self.hidden:
 			x = relu(layer(x))
+			
 		a = self.adv(x)
 		q = self.v(x) + a - a.mean(-1, keepdim=True)
 		return q
@@ -47,9 +43,8 @@ class CylinderNet(nn.Module):
 class CylinderCoordConv(nn.Module):
 	def __init__(self, useCuda):
 		super(CylinderCoordConv, self).__init__()
-		self.useCuda = useCuda
 		## Adding coordconv layers
-		self.addlayers = AddLayers(self.useCuda)
+		self.addlayers = AddLayers()
 		## Conv layers
 		self.conv1 = nn.Conv2d(3, 8, kernel_size=10, stride=2)
 		self.conv2 = nn.Conv2d(8, 16, kernel_size=10, stride=2)
@@ -62,18 +57,17 @@ class CylinderCoordConv(nn.Module):
 
 	def forward(self, s):
 		config, tscs, rms, img, time = s
-		if self.useCuda:
-			config = config.cuda()
-			tscs = tscs.cuda()
-			rms = rms.cuda()
+		nums = torch.cat([config, tscs, rms, time], dim=-1)
+		if next(self.parameters()).is_cuda:
+			nums = nums.cuda()
 			img = img.cuda()
-			time = time.cuda()
 			
 		x = self.addlayers(img)
 		x = relu(self.conv1(x))
 		x = relu(self.conv2(x))
 		x = self.flat(x)
-		x = torch.cat([x, config, tscs, rms, time], dim=-1)
+
+		x = torch.cat([x, nums], dim=-1)
 		x = relu(self.fc1(x))
 		x = relu(self.fc2(x))
 		a = self.adv(x)

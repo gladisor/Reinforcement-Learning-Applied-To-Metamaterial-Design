@@ -24,6 +24,7 @@ if __name__ == '__main__':
 	USE_CUDA = False
 	H_SIZE = 128
 	N_HIDDEN = 1
+	STEP_SIZE = 0.25
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -31,8 +32,8 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=USE_CUDA)
 
 	# Defining models
-	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN, useCuda=USE_CUDA)
-	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN, useCuda=USE_CUDA)
+	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN)
+	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN)
 	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 		'c_','tscs_','rms_','time_','done'))
 
 	## Creating environment object
-	env = TSCSEnv()
+	env = TSCSEnv(stepSize=STEP_SIZE)
 
 	step = 0
 	writer = SummaryWriter(

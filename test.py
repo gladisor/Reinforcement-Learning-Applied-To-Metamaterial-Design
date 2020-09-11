@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
-dqn = CylinderNet(useCuda=False)
-dqn.load_state_dict(torch.load('model.pt'))
-# env = gym.make('LunarLander-v2')
+dqn = CylinderNet(128, 1)
+dqn.load_state_dict(torch.load('1hidden-0.5stepsize.pt'))
 env = TSCSEnv()
 
 plt.ion()
@@ -34,7 +33,7 @@ for t in range(100):
 	myobj.set_data(img.view(50, 50))
 	fig.canvas.draw()
 	fig.canvas.flush_events()
-	plt.pause(0.01)
+	plt.pause(0.05)
 
 	print(f"RMS: {round(state[2].item(), 2)}")
 	print(f"Reward: {reward}")
