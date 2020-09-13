@@ -1,4 +1,4 @@
-# checkers-RL
+# DDQN
 
 ## Description
 
