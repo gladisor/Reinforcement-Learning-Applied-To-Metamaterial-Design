@@ -13,7 +13,7 @@ if __name__ == '__main__':
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY = 0.998
+	EPS_DECAY = 0.9998
 	TARGET_UPDATE = 10
 	MEMORY_SIZE = 100_000
 	BATCH_SIZE = 64
@@ -21,15 +21,14 @@ if __name__ == '__main__':
 	MOMENTUM = 0.9
 	NUM_EPISODES = 30_000
 	EPISODE_LEN = 100
-	USE_CUDA = False
 	H_SIZE = 128
 	N_HIDDEN = 1
-	STEP_SIZE = 0.5
+	STEP_SIZE = 0.3
 
 	## Creating agent object with parameters
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
-		MEMORY_SIZE, BATCH_SIZE, LR, useCuda=USE_CUDA)
+		MEMORY_SIZE, BATCH_SIZE, LR)
 
 	# Defining models
 	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN)
@@ -54,7 +53,13 @@ if __name__ == '__main__':
 
 	step = 0
 	writer = SummaryWriter(
-		f'grid_search/{GAMMA}gamma-SGD-{MOMENTUM}momentum-{TARGET_UPDATE}targetupdate-2hidden-long')
+		f'runs/'
+		f'{GAMMA}gamma' \
+		f'-{MOMENTUM}momentum' \
+		f'-{TARGET_UPDATE}targetupdate' \
+		f'-{N_HIDDEN}hidden' \
+		f'-{STEP_SIZE}stepsize' \
+		f'-{EPS_DECAY}epsDecay')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
