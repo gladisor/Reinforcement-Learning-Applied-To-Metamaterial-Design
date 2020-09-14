@@ -23,7 +23,7 @@ if __name__ == '__main__':
 	EPISODE_LEN = 100
 	H_SIZE = 128
 	N_HIDDEN = 1
-	STEP_SIZE = 0.3
+	STEP_SIZE = 0.5
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -34,11 +34,14 @@ if __name__ == '__main__':
 	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN)
 	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN)
 	agent.Qt.eval()
-	agent.opt = torch.optim.SGD(
+	# agent.opt = torch.optim.SGD(
+	# 	agent.Qp.parameters(),
+	# 	lr=LR,
+	# 	momentum=MOMENTUM)
+	agent.opt = torch.optim.Adam(
 		agent.Qp.parameters(),
-		lr=LR,
-		momentum=MOMENTUM)
-
+		lr=LR)
+	
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
 
@@ -53,8 +56,9 @@ if __name__ == '__main__':
 
 	step = 0
 	writer = SummaryWriter(
-		f'runs/'
-		f'{GAMMA}gamma' \
+		f'runs/' \
+		f'Adam' \
+		f'-{GAMMA}gamma' \
 		f'-{MOMENTUM}momentum' \
 		f'-{TARGET_UPDATE}targetupdate' \
 		f'-{N_HIDDEN}hidden' \
