@@ -57,7 +57,7 @@ if __name__ == '__main__':
 	step = 0
 	writer = SummaryWriter(
 		f'runs/' \
-		f'Adam' \
+		f'SGD' \
 		f'-{GAMMA}gamma' \
 		f'-{MOMENTUM}momentum' \
 		f'-{TARGET_UPDATE}targetupdate' \
