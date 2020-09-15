@@ -34,13 +34,13 @@ if __name__ == '__main__':
 	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN)
 	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN)
 	agent.Qt.eval()
-	# agent.opt = torch.optim.SGD(
-	# 	agent.Qp.parameters(),
-	# 	lr=LR,
-	# 	momentum=MOMENTUM)
-	agent.opt = torch.optim.Adam(
+	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
-		lr=LR)
+		lr=LR,
+		momentum=MOMENTUM)
+	# agent.opt = torch.optim.Adam(
+	# 	agent.Qp.parameters(),
+	# 	lr=LR)
 	
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
 	agent.nActions = 16
