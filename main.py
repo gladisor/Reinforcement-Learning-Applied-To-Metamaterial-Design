@@ -14,7 +14,7 @@ if __name__ == '__main__':
 	EPS = 1
 	EPS_END = 0.1
 	EPS_DECAY = 0.9998
-	TARGET_UPDATE = 100
+	TARGET_UPDATE = 10
 	MEMORY_SIZE = 100_000
 	BATCH_SIZE = 64
 	LR = 0.0005
@@ -63,7 +63,8 @@ if __name__ == '__main__':
 		f'-{TARGET_UPDATE}targetupdate' \
 		f'-{N_HIDDEN}hidden' \
 		f'-{STEP_SIZE}stepsize' \
-		f'-{EPS_DECAY}epsDecay')
+		f'-{EPS_DECAY}epsDecay' \
+		f'-tdPriority')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env

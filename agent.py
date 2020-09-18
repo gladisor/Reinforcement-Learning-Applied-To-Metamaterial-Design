@@ -101,6 +101,7 @@ class Agent():
 				# target_q_values = r + (1 - done) * self.gamma * maxQ
 				target_q_values[~done] = r[~done] + self.gamma * maxQ[~done]
 				target_q_values[done] = r[done]
+				td = target_q_values - current_q_values
 
 			## Calculate loss and backprop
 			prios = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
@@ -110,7 +111,8 @@ class Agent():
 			self.opt.step()
 
 			## Update priorities of sampled batch
-			self.memory.update_priorities(indices, prios)
+			# self.memory.update_priorities(indices, prios)
+			self.memory.update_priorities(indices, torch.abs(td).detach())
 			return loss.item()
 
 	def decay_epsilon(self):
