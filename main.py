@@ -1,4 +1,3 @@
-import gym
 from env import TSCSEnv
 from agent import Agent
 from models import CylinderCoordConv, CylinderNet
@@ -64,7 +63,8 @@ if __name__ == '__main__':
 		f'-{N_HIDDEN}hidden' \
 		f'-{STEP_SIZE}stepsize' \
 		f'-{EPS_DECAY}epsDecay' \
-		f'-tdPriority')
+		f'-tdPriority' \
+		f'-testingENV')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
