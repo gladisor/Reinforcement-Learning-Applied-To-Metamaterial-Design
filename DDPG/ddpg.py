@@ -17,8 +17,8 @@ class DDPG():
 		self.nActions = 8
 		self.actor = Actor(21, 2, 128, self.nActions)
 		self.targetActor = Actor(21, 2, 128, self.nActions)
-		self.critic = Critic(21, 4, 128, self.nActions)
-		self.targetCritic = Critic(21, 4, 128, self.nActions)
+		self.critic = Critic(21, 6, 128, self.nActions)
+		self.targetCritic = Critic(21, 6, 128, self.nActions)
 
 		# Define the optimizers for both networks
 		self.actorOpt = Adam(self.actor.parameters(), lr=1e-4)
@@ -31,7 +31,7 @@ class DDPG():
 		self.tau = 0.001
 		self.action_low = -0.2
 		self.action_high = 0.2
-		self.epsilon = 0.75
+		self.epsilon = 0.2
 		self.eps_decay = 0.9998
 		self.eps_end = 0.05
 
@@ -43,10 +43,12 @@ class DDPG():
 		self.batch_size = 64
 
 	def select_action(self, state):
+		# self.targetActor = self.targetActor.eval()
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
 			action = agent.targetActor(state) + noise
 			action.clamp_(self.action_low, self.action_high)
+		# self.targetActor = self.targetActor.train()
 		return action
 
 	def extract_tensors(self, batch):
@@ -101,49 +103,49 @@ class DDPG():
 
 
 if __name__ == '__main__':
-	## ddpg params
-	# N_ACTIONS = 8
-	# ACTOR_N_HIDDEN = 2
-	# ACTOR_H_SIZE = 128
-	# CRITIC_N_HIDDEN = 4
-	# CRITIC_H_SIZE = 128
-	# ACTOR_LR = 1e-4
-	# CRITIC_LR = 1e-3
-	# CRITIC_WD = 1e-2
-	# GAMMA = 0.99
-	# TAU = 0.001
-	# ACTION_LOW = -0.2
-	# ACTION_HIGH = 0.2
-	# EPSILON = 0.75
-	# EPS_DECAY = 0.9995
-	# EPS_END = 0.05
-	# MEM_SIZE = 300_000
-	# BATCH_SIZE = 64
-	# ## Episode hyperparams
-	# NUM_EPISODES = 30_000
-	# EP_LEN = 100
-	# SAVE_MODELS = 1000
+	# ddpg params
+	N_ACTIONS = 8
+	ACTOR_N_HIDDEN = 2
+	ACTOR_H_SIZE = 128
+	CRITIC_N_HIDDEN = 4
+	CRITIC_H_SIZE = 128
+	ACTOR_LR = 1e-4
+	CRITIC_LR = 1e-3
+	CRITIC_WD = 1e-2
+	GAMMA = 0.99
+	TAU = 0.001
+	ACTION_LOW = -0.2
+	ACTION_HIGH = 0.2
+	EPSILON = 0.75
+	EPS_DECAY = 0.9995
+	EPS_END = 0.05
+	MEM_SIZE = 300_000
+	BATCH_SIZE = 64
+	## Episode hyperparams
+	NUM_EPISODES = 30_000
+	EP_LEN = 100
+	SAVE_MODELS = 1000
 
 	## Create env and agent
 	env = TSCSEnv()
 	agent = DDPG()
 
-	writer = SummaryWriter('runs/ddpg-normalDist-LargerNets')
+	writer = SummaryWriter('runs/ddpg-normalDist-6LayerCritic')
 
 	for episode in range(NUM_EPISODES):
-		state = env.reset()
+		state, rms = env.reset()
 		episode_reward = 0
 
-		initial = state[0][8:18].mean().item()
+		initial = rms.item()
 		lowest = initial
 
 		for t in tqdm(range(EP_LEN)):
 			action = agent.select_action(state)
-			nextState, reward, done = env.step(action)
+			nextState, rms, reward, done = env.step(action)
 			episode_reward += reward
 
 			# Update current lowest
-			current = state[0][8:18].mean().item()
+			current = rms.item()
 			if current < lowest:
 				lowest = current
 

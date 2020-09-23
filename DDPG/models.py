@@ -7,16 +7,18 @@ class Actor(nn.Module):
 		super(Actor, self).__init__()
 		self.fc = nn.Linear(inSize, hSize)
 
-		self.hidden = nn.ModuleList()
+		self.layers = nn.ModuleList()
+		self.norms = nn.ModuleList()
 		for _ in range(nHidden):
-			self.hidden.append(nn.Linear(hSize, hSize))
+			self.layers.append(nn.Linear(hSize, hSize))
+			self.norms.append(nn.LayerNorm(hSize))
 
 		self.mu = nn.Linear(hSize, nActions)
 
 	def forward(self, state):
 		x = relu(self.fc(state))
-		for layer in self.hidden:
-			x = relu(layer(x))
+		for layer, norm in zip(self.layers, self.norms):
+			x = relu(layer(norm(x)))
 		x = 0.2 * tanh(self.mu(x))
 		return x
 
@@ -25,35 +27,34 @@ class Critic(nn.Module):
 		super(Critic, self).__init__()
 		self.fc = nn.Linear(inSize + nActions, hSize)
 
-		self.hidden = nn.ModuleList()
+		self.layers = nn.ModuleList()
+		self.norms = nn.ModuleList()
 		for _ in range(nHidden):
-			self.hidden.append(nn.Linear(hSize, hSize))
+			self.layers.append(nn.Linear(hSize, hSize))
+			self.norms.append(nn.LayerNorm(hSize))
 
 		self.value = nn.Linear(hSize, 1)
 
 	def forward(self, state, action):
 		x = cat([state, action], dim=-1).float()
 		x = relu(self.fc(x))
-		for layer in self.hidden:
-			x = relu(layer(x))
+		for layer, norm in zip(self.layers, self.norms):
+			x = relu(layer(norm(x)))
 		x = self.value(x)
 		return x
 
 if __name__ == '__main__':
-	import gym
+	from env import TSCSEnv
 
-	actor = Actor(3, 1, 64, 1)
-	critic = Critic(3, 1, 64, 1)
-	env = gym.make('Pendulum-v0')
-	state = env.reset()
-	state = tensor([state]).float()
+	env = TSCSEnv()
+	actor = Actor(21, 1, 64, 8)
+	critic = Critic(21, 1, 64, 8)
+	print(actor)
+	print(critic)
+	state, rms = env.reset()
 
 	for t in range(100):
-		env.render()
 		action = actor(state)
-		nextState, reward, done, _ = env.step([action.item()])
-		print(action, reward)
-		nextState = tensor([nextState]).float()
+		nextState, rms, reward, done = env.step(action)
+		print(reward)
 		state = nextState
-
-	env.close()

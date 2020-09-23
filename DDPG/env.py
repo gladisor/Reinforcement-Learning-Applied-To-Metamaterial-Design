@@ -126,7 +126,8 @@ class TSCSEnv():
 		# self.img = self.getIMG(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
-		return torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float()
+		state = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float() 
+		return state, self.RMS
 
 	def getNextConfig(self, config, action):
 		"""
@@ -156,7 +157,7 @@ class TSCSEnv():
 
 		reward, done = self.getReward(self.RMS, isValid)
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float()
-		return nextState, reward, done
+		return nextState, self.RMS, reward, done
 
 if __name__ == '__main__':
 	import numpy as np
