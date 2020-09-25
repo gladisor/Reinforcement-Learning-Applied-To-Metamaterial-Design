@@ -13,49 +13,50 @@ from env import TSCSEnv
 
 class DDPG():
 	def __init__(self,
-		inSize, actor_nHidden, actor_hSize, critic_nHidden, critic_hSize, 
-		n_actions, actor_lr, critic_lr, critic_wd,
-		gamma, tau, action_low, action_high, epsilon, eps_decay, eps_end,
-		mem_size, batch_size, num_episodes, ep_len, save_models):
+		inSize, actorNHidden, actorHSize, criticNHidden, criticHSize, 
+		nActions, actionRange, actorLR, criticLR, criticWD,
+		gamma, tau, epsilon, epsDecay, epsEnd,
+		memSize, batchSize, numEpisodes, epLen):
 
 		super(DDPG, self).__init__()
-		self.nActions = n_actions
-		self.actor = Actor(inSize, actor_nHidden, actor_hSize, self.nActions)
-		self.targetActor = Actor(inSize, actor_nHidden, actor_hSize, self.nActions)
-		self.critic = Critic(inSize, critic_nHidden, critic_hSize, self.nActions)
-		self.targetCritic = Critic(inSize, critic_nHidden, critic_hSize, self.nActions)
+		## Actions
+		self.nActions = nActions
+		self.actionRange = actionRange
+
+		self.actor = Actor(inSize, actorNHidden, actorHSize, nActions, actionRange)
+		self.targetActor = Actor(inSize, actorNHidden, actorHSize, nActions, actionRange)
+		self.critic = Critic(inSize, criticNHidden, criticHSize, nActions)
+		self.targetCritic = Critic(inSize, criticNHidden, criticHSize, nActions)
 
 		# Define the optimizers for both networks
-		self.actorOpt = Adam(self.actor.parameters(), lr=actor_lr)
-		self.criticOpt = Adam(self.critic.parameters(), lr=critic_lr, weight_decay=critic_wd)
+		self.actorOpt = Adam(self.actor.parameters(), lr=actorLR)
+		self.criticOpt = Adam(self.critic.parameters(), lr=criticLR, weight_decay=criticWD)
 
 		self.targetActor.load_state_dict(self.actor.state_dict())
 		self.targetCritic.load_state_dict(self.critic.state_dict())
 
 		self.gamma = gamma
 		self.tau = tau
-		self.action_low = action_low
-		self.action_high = action_high
 		self.epsilon = epsilon
-		self.eps_decay = eps_decay
-		self.eps_end = eps_end
+		self.epsDecay = epsDecay
+		self.epsEnd = epsEnd
 
 		self.Transition = namedtuple(
 			'Transition',
 			('s','a','r','s_','done'))
 
-		self.memory = NaivePrioritizedBuffer(mem_size)
-		self.batch_size = batch_size
+		self.memory = NaivePrioritizedBuffer(memSize)
+		self.batchSize = batchSize
 
-		self.num_episodes = num_episodes
-		self.ep_len = ep_len
-		self.save_models = save_models
+		self.numEpisodes = numEpisodes
+		self.epLen = epLen
+		self.saveModels = 1000
 
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, self.epsilon, self.nActions)
-			action = agent.targetActor(state) + noise
-			action.clamp_(self.action_low, self.action_high)
+			noise = np.random.normal(0, 1, self.nActions)
+			action = agent.targetActor(state) + noise * self.epsilon
+			action.clamp_(-self.actionRange, self.actionRange)
 		return action
 
 	def extract_tensors(self, batch):
@@ -72,9 +73,9 @@ class DDPG():
 			target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
 	def optimize_model(self):
-		if self.memory.can_provide_sample(self.batch_size):
+		if self.memory.can_provide_sample(self.batchSize):
 			## Get data from memory
-			batch, indices, weights = self.memory.sample(self.batch_size)
+			batch, indices, weights = self.memory.sample(self.batchSize)
 			s, a, r, s_, done = self.extract_tensors(batch)
 			weights = tensor([weights])
 
@@ -101,24 +102,24 @@ class DDPG():
 
 			## Updating priority of transition by last absolute td error
 			td = torch.abs(target_q - current_q).detach()
-			self.memory.update_priorities(indices, td)
+			self.memory.update_priorities(indices, td + 1e-5)
 			return td.mean().item()
 
 	def decay_epsilon(self):
-		self.epsilon *= self.eps_decay
-		self.epsilon = max(self.epsilon, self.eps_end)
+		self.epsilon *= self.epsDecay
+		self.epsilon = max(self.epsilon, self.epsEnd)
 
 	def learn(self, env):
-		writer = SummaryWriter('runs/ddpg-normalDist-layernorm')
+		writer = SummaryWriter('runs/ddpg')
 
-		for episode in range(self.num_episodes):
+		for episode in range(self.numEpisodes):
 			state, rms = env.reset()
 			episode_reward = 0
 
 			initial = rms.item()
 			lowest = initial
 
-			for t in tqdm(range(self.ep_len)):
+			for t in tqdm(range(self.epLen)):
 				action = self.select_action(state)
 				nextState, rms, reward, done = env.step(action)
 				episode_reward += reward
@@ -162,7 +163,7 @@ class DDPG():
 			writer.add_scalar('train/score', episode_reward, episode)
 			writer.add_scalar('train/lowest', lowest, episode)
 
-			if episode % self.save_models == 0:
+			if episode % self.saveModels == 0:
 				torch.save(self.actor.state_dict(), 'actor.pt')
 				torch.save(self.critic.state_dict(), 'critic.pt')
 
@@ -177,13 +178,12 @@ if __name__ == '__main__':
 	CRITIC_N_HIDDEN = 6
 	CRITIC_H_SIZE = 128
 	N_ACTIONS = 8
+	ACTION_RANGE = 0.2
 	ACTOR_LR = 1e-4
 	CRITIC_LR = 1e-3
 	CRITIC_WD = 1e-2
 	GAMMA = 0.99
 	TAU = 0.001
-	ACTION_LOW = -0.2
-	ACTION_HIGH = 0.2
 	EPSILON = 0.75
 	EPS_DECAY = 0.9998
 	EPS_END = 0.05
@@ -191,15 +191,13 @@ if __name__ == '__main__':
 	BATCH_SIZE = 64
 	NUM_EPISODES = 30_000
 	EP_LEN = 100
-	SAVE_MODELS = 1000
 
 	agent = DDPG(
 		IN_SIZE, ACTOR_N_HIDDEN, ACTOR_H_SIZE,
 		CRITIC_N_HIDDEN, CRITIC_H_SIZE, N_ACTIONS, 
-		ACTOR_LR, CRITIC_LR, CRITIC_WD, GAMMA, TAU,
-		ACTION_LOW, ACTION_HIGH, EPSILON, EPS_DECAY,
-		EPS_END, MEM_SIZE, BATCH_SIZE NUM_EPISODES,
-		EP_LEN, SAVE_MODELS)
+		ACTION_RANGE, ACTOR_LR, CRITIC_LR, CRITIC_WD, 
+		GAMMA, TAU, EPSILON, EPS_DECAY, EPS_END, MEM_SIZE, 
+		BATCH_SIZE, NUM_EPISODES,EP_LEN)
 
 	## Create env and agent
 	env = TSCSEnv()

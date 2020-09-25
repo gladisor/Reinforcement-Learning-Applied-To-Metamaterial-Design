@@ -3,8 +3,9 @@ from torch import tensor, cat, relu, tanh
 import torch.nn as nn
 
 class Actor(nn.Module):
-	def __init__(self, inSize, nHidden, hSize, nActions):
+	def __init__(self, inSize, nHidden, hSize, nActions, actionRange):
 		super(Actor, self).__init__()
+		self.actionRange = actionRange
 		self.fc = nn.Linear(inSize, hSize)
 
 		self.layers = nn.ModuleList()
@@ -19,7 +20,7 @@ class Actor(nn.Module):
 		x = relu(self.fc(state))
 		for layer, norm in zip(self.layers, self.norms):
 			x = relu(layer(norm(x)))
-		x = 0.2 * tanh(self.mu(x))
+		x = self.actionRange * tanh(self.mu(x))
 		return x
 
 class Critic(nn.Module):
