@@ -12,43 +12,50 @@ from torch.utils.tensorboard import SummaryWriter
 from env import TSCSEnv
 
 class DDPG():
-	def __init__(self):
+	def __init__(self,
+		inSize, actor_nHidden, actor_hSize, critic_nHidden, critic_hSize, 
+		n_actions, actor_lr, critic_lr, critic_wd,
+		gamma, tau, action_low, action_high, epsilon, eps_decay, eps_end,
+		mem_size, batch_size, num_episodes, ep_len, save_models):
+
 		super(DDPG, self).__init__()
-		self.nActions = 8
-		self.actor = Actor(21, 2, 128, self.nActions)
-		self.targetActor = Actor(21, 2, 128, self.nActions)
-		self.critic = Critic(21, 6, 128, self.nActions)
-		self.targetCritic = Critic(21, 6, 128, self.nActions)
+		self.nActions = n_actions
+		self.actor = Actor(inSize, actor_nHidden, actor_hSize, self.nActions)
+		self.targetActor = Actor(inSize, actor_nHidden, actor_hSize, self.nActions)
+		self.critic = Critic(inSize, critic_nHidden, critic_hSize, self.nActions)
+		self.targetCritic = Critic(inSize, critic_nHidden, critic_hSize, self.nActions)
 
 		# Define the optimizers for both networks
-		self.actorOpt = Adam(self.actor.parameters(), lr=1e-4)
-		self.criticOpt = Adam(self.critic.parameters(), lr=1e-3, weight_decay=1e-2)
+		self.actorOpt = Adam(self.actor.parameters(), lr=actor_lr)
+		self.criticOpt = Adam(self.critic.parameters(), lr=critic_lr, weight_decay=critic_wd)
 
 		self.targetActor.load_state_dict(self.actor.state_dict())
 		self.targetCritic.load_state_dict(self.critic.state_dict())
 
-		self.gamma = 0.99
-		self.tau = 0.001
-		self.action_low = -0.2
-		self.action_high = 0.2
-		self.epsilon = 0.2
-		self.eps_decay = 0.9998
-		self.eps_end = 0.05
+		self.gamma = gamma
+		self.tau = tau
+		self.action_low = action_low
+		self.action_high = action_high
+		self.epsilon = epsilon
+		self.eps_decay = eps_decay
+		self.eps_end = eps_end
 
 		self.Transition = namedtuple(
 			'Transition',
 			('s','a','r','s_','done'))
 
-		self.memory = NaivePrioritizedBuffer(300_000)
-		self.batch_size = 64
+		self.memory = NaivePrioritizedBuffer(mem_size)
+		self.batch_size = batch_size
+
+		self.num_episodes = num_episodes
+		self.ep_len = ep_len
+		self.save_models = save_models
 
 	def select_action(self, state):
-		# self.targetActor = self.targetActor.eval()
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
 			action = agent.targetActor(state) + noise
 			action.clamp_(self.action_low, self.action_high)
-		# self.targetActor = self.targetActor.train()
 		return action
 
 	def extract_tensors(self, batch):
@@ -101,14 +108,75 @@ class DDPG():
 		self.epsilon *= self.eps_decay
 		self.epsilon = max(self.epsilon, self.eps_end)
 
+	def learn(self, env):
+		writer = SummaryWriter('runs/ddpg-normalDist-layernorm')
+
+		for episode in range(self.num_episodes):
+			state, rms = env.reset()
+			episode_reward = 0
+
+			initial = rms.item()
+			lowest = initial
+
+			for t in tqdm(range(self.ep_len)):
+				action = self.select_action(state)
+				nextState, rms, reward, done = env.step(action)
+				episode_reward += reward
+
+				# Update current lowest
+				current = rms.item()
+				if current < lowest:
+					lowest = current
+
+				## Check if terminal
+				if t == EP_LEN - 1:
+					done = 1
+				else:
+					done = 0
+
+				## Cast reward and done as tensors
+				reward = tensor([[reward]]).float()
+				done = tensor([[done]])
+
+				## Store transition in memory
+				e = self.Transition(state, action, reward, nextState, done)
+				self.memory.push(e)
+
+				## Preform bellman update
+				td = self.optimize_model()
+
+				if done == 1:
+					break
+
+				state = nextState
+
+			print(
+				f'#:{episode}, ' \
+				f'I:{round(initial, 2)}, ' \
+				f'Lowest:{round(lowest, 2)}, ' \
+				f'F:{round(current, 2)}, '\
+				f'Score:{round(episode_reward, 2)}, ' \
+				f'Mean td:{round(td, 2)}, ' \
+				f'Epsilon: {round(self.epsilon, 2)}')
+
+			writer.add_scalar('train/score', episode_reward, episode)
+			writer.add_scalar('train/lowest', lowest, episode)
+
+			if episode % self.save_models == 0:
+				torch.save(self.actor.state_dict(), 'actor.pt')
+				torch.save(self.critic.state_dict(), 'critic.pt')
+
+			self.decay_epsilon()
+
 
 if __name__ == '__main__':
 	# ddpg params
-	N_ACTIONS = 8
+	IN_SIZE = 21
 	ACTOR_N_HIDDEN = 2
 	ACTOR_H_SIZE = 128
-	CRITIC_N_HIDDEN = 4
+	CRITIC_N_HIDDEN = 6
 	CRITIC_H_SIZE = 128
+	N_ACTIONS = 8
 	ACTOR_LR = 1e-4
 	CRITIC_LR = 1e-3
 	CRITIC_WD = 1e-2
@@ -117,77 +185,24 @@ if __name__ == '__main__':
 	ACTION_LOW = -0.2
 	ACTION_HIGH = 0.2
 	EPSILON = 0.75
-	EPS_DECAY = 0.9995
+	EPS_DECAY = 0.9998
 	EPS_END = 0.05
 	MEM_SIZE = 300_000
 	BATCH_SIZE = 64
-	## Episode hyperparams
 	NUM_EPISODES = 30_000
 	EP_LEN = 100
 	SAVE_MODELS = 1000
 
+	agent = DDPG(
+		IN_SIZE, ACTOR_N_HIDDEN, ACTOR_H_SIZE,
+		CRITIC_N_HIDDEN, CRITIC_H_SIZE, N_ACTIONS, 
+		ACTOR_LR, CRITIC_LR, CRITIC_WD, GAMMA, TAU,
+		ACTION_LOW, ACTION_HIGH, EPSILON, EPS_DECAY,
+		EPS_END, MEM_SIZE, BATCH_SIZE NUM_EPISODES,
+		EP_LEN, SAVE_MODELS)
+
 	## Create env and agent
 	env = TSCSEnv()
-	agent = DDPG()
 
-	writer = SummaryWriter('runs/ddpg-normalDist-6LayerCritic')
-
-	for episode in range(NUM_EPISODES):
-		state, rms = env.reset()
-		episode_reward = 0
-
-		initial = rms.item()
-		lowest = initial
-
-		for t in tqdm(range(EP_LEN)):
-			action = agent.select_action(state)
-			nextState, rms, reward, done = env.step(action)
-			episode_reward += reward
-
-			# Update current lowest
-			current = rms.item()
-			if current < lowest:
-				lowest = current
-
-			## Check if terminal
-			if t == EP_LEN - 1:
-				done = 1
-			else:
-				done = 0
-
-			## Cast reward and done as tensors
-			reward = tensor([[reward]]).float()
-			done = tensor([[done]])
-
-			## Store transition in memory
-			e = agent.Transition(state, action, reward, nextState, done)
-			agent.memory.push(e)
-
-			## Preform bellman update
-			td = agent.optimize_model()
-
-			if done == 1:
-				break
-
-			state = nextState
-
-		print(
-			f'#:{episode}, ' \
-			f'I:{round(initial, 2)}, ' \
-			f'Lowest:{round(lowest, 2)}, ' \
-			f'F:{round(current, 2)}, '\
-			f'Score:{round(episode_reward, 2)}, ' \
-			f'Mean td:{round(td, 2)}, ' \
-			f'Epsilon: {round(agent.epsilon, 2)}')
-
-		writer.add_scalar('train/score', episode_reward, episode)
-		writer.add_scalar('train/lowest', lowest, episode)
-
-		if episode % SAVE_MODELS == 0:
-			torch.save(agent.actor.state_dict(), 'actor.pt')
-			torch.save(agent.critic.state_dict(), 'critic.pt')
-
-		agent.decay_epsilon()
-
-
-
+	## Run training session
+	agent.learn(env)
