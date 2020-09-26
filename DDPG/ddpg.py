@@ -5,7 +5,6 @@ from torch.optim import Adam
 import torch.nn.functional as F
 from collections import namedtuple
 from memory import NaivePrioritizedBuffer
-from noise import OrnsteinUhlenbeckActionNoise
 import numpy as np
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
@@ -23,28 +22,33 @@ class DDPG():
 		self.nActions = nActions
 		self.actionRange = actionRange
 
+		## Networks
 		self.actor = Actor(inSize, actorNHidden, actorHSize, nActions, actionRange)
 		self.targetActor = Actor(inSize, actorNHidden, actorHSize, nActions, actionRange)
 		self.critic = Critic(inSize, criticNHidden, criticHSize, nActions)
 		self.targetCritic = Critic(inSize, criticNHidden, criticHSize, nActions)
 
-		# Define the optimizers for both networks
+		## Define the optimizers for both networks
 		self.actorOpt = Adam(self.actor.parameters(), lr=actorLR)
 		self.criticOpt = Adam(self.critic.parameters(), lr=criticLR, weight_decay=criticWD)
 
+		## Hard update
 		self.targetActor.load_state_dict(self.actor.state_dict())
 		self.targetCritic.load_state_dict(self.critic.state_dict())
 
+		## Various hyperparameters
 		self.gamma = gamma
 		self.tau = tau
 		self.epsilon = epsilon
 		self.epsDecay = epsDecay
 		self.epsEnd = epsEnd
 
+		## Transition tuple to store experience
 		self.Transition = namedtuple(
 			'Transition',
 			('s','a','r','s_','done'))
 
+		## Allocate memory for replay buffer and set batch size
 		self.memory = NaivePrioritizedBuffer(memSize)
 		self.batchSize = batchSize
 
@@ -54,9 +58,10 @@ class DDPG():
 
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, 1, self.nActions)
-			action = agent.targetActor(state) + noise * self.epsilon
+			noise = np.random.normal(0, self.epsilon, self.nActions)
+			action = self.targetActor(state) + noise
 			action.clamp_(-self.actionRange, self.actionRange)
+			# action = self.actionRange * tanh(action) ## Try this instead of clamp
 		return action
 
 	def extract_tensors(self, batch):
@@ -83,14 +88,14 @@ class DDPG():
 			maxQ = self.targetCritic(s_, self.targetActor(s_).detach())
 			target_q = r + (1.0 - done) * self.gamma * maxQ
 
-			# Update the critic network
+			## Update the critic network
 			self.criticOpt.zero_grad()
 			current_q = self.critic(s, a)
 			criticLoss = weights @ F.smooth_l1_loss(current_q, target_q.detach(), reduction='none')
 			criticLoss.backward()
 			self.criticOpt.step()
 
-			# Update the actor network
+			## Update the actor network
 			self.actorOpt.zero_grad()
 			actorLoss = -self.critic(s, self.actor(s)).mean()
 			actorLoss.backward()
@@ -110,21 +115,27 @@ class DDPG():
 		self.epsilon = max(self.epsilon, self.epsEnd)
 
 	def learn(self, env):
-		writer = SummaryWriter('runs/ddpg')
+		## Create file to store run data in using tensorboard
+		writer = SummaryWriter('runs/ddpg-attemptToReproduce-layerNorm')
 
 		for episode in range(self.numEpisodes):
+
+			## Reset environment to starting state
 			state, rms = env.reset()
 			episode_reward = 0
 
+			## Log initial scattering at beginning of episode
 			initial = rms.item()
 			lowest = initial
 
 			for t in tqdm(range(self.epLen)):
+
+				## Select action and observe next state, reward
 				action = self.select_action(state)
 				nextState, rms, reward, done = env.step(action)
 				episode_reward += reward
 
-				# Update current lowest
+				# Update current lowest scatter
 				current = rms.item()
 				if current < lowest:
 					lowest = current
@@ -146,27 +157,32 @@ class DDPG():
 				## Preform bellman update
 				td = self.optimize_model()
 
+				## Break out of loop if terminal state
 				if done == 1:
 					break
 
 				state = nextState
 
+			## Print episode statistics to console
 			print(
 				f'#:{episode}, ' \
 				f'I:{round(initial, 2)}, ' \
 				f'Lowest:{round(lowest, 2)}, ' \
 				f'F:{round(current, 2)}, '\
 				f'Score:{round(episode_reward, 2)}, ' \
-				f'Mean td:{round(td, 2)}, ' \
+				f'td:{round(td, 2)}, ' \
 				f'Epsilon: {round(self.epsilon, 2)}')
 
+			## Log score and lowest scattering configuration discovered in tensorboard
 			writer.add_scalar('train/score', episode_reward, episode)
 			writer.add_scalar('train/lowest', lowest, episode)
 
+			## Save models
 			if episode % self.saveModels == 0:
-				torch.save(self.actor.state_dict(), 'actor.pt')
-				torch.save(self.critic.state_dict(), 'critic.pt')
+				torch.save(self.targetActor.state_dict(), 'actor.pt')
+				torch.save(self.targetCritic.state_dict(), 'critic.pt')
 
+			## Reduce exploration
 			self.decay_epsilon()
 
 

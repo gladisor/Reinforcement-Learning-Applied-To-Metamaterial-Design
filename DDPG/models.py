@@ -5,6 +5,7 @@ import torch.nn as nn
 class Actor(nn.Module):
 	def __init__(self, inSize, nHidden, hSize, nActions, actionRange):
 		super(Actor, self).__init__()
+		self.nActions = nActions
 		self.actionRange = actionRange
 		self.fc = nn.Linear(inSize, hSize)
 
@@ -20,8 +21,9 @@ class Actor(nn.Module):
 		x = relu(self.fc(state))
 		for layer, norm in zip(self.layers, self.norms):
 			x = relu(layer(norm(x)))
-		x = self.actionRange * tanh(self.mu(x))
-		return x
+			
+		action = self.actionRange * tanh(self.mu(x))
+		return action
 
 class Critic(nn.Module):
 	def __init__(self, inSize, nHidden, hSize, nActions):
