@@ -24,7 +24,7 @@ class ReplayMemory(object):
 
 class NaivePrioritizedBuffer(object):
 	def __init__(self, capacity):
-		self.prob_alpha = 0.7
+		self.alpha = 0.7
 		self.beta = 0.5
 		self.betaAnneal = 0.999
 		self.betaEnd = 1
@@ -46,7 +46,7 @@ class NaivePrioritizedBuffer(object):
 		else:
 			prios = self.priorities[:self.idx]
 
-		probs = prios ** self.prob_alpha
+		probs = prios ** self.alpha
 		probs /= probs.sum()
 
 		indices = np.random.choice(len(self.memory), batch_size, p=probs)

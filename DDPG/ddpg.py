@@ -197,13 +197,15 @@ if __name__ == '__main__':
 	ACTION_RANGE = 0.2
 	ACTOR_LR = 1e-4
 	CRITIC_LR = 1e-3
-	CRITIC_WD = 1e-2
-	GAMMA = 0.99
-	TAU = 0.001
-	EPSILON = 0.75
-	EPS_DECAY = 0.9998
-	EPS_END = 0.05
-	MEM_SIZE = 300_000
+	CRITIC_WD = 1e-2 ## How agressively to reduce overfitting
+	GAMMA = 0.99 ## How much to value future reward
+	TAU = 0.001 ## How much to update target network every step
+	EPSILON = 0.75 ## Scale of random noise
+	EPS_DECAY = 0.9998 ## How slowly to reduce epsilon
+	EPS_END = 0.05 ## Lowest epsilon allowed
+	MEM_SIZE = 300_000 ## How many samples in priority queue
+	MEM_ALPHA = 0.7 ## How much to use priority queue (0 = not at all, 1 = maximum)
+	MEM_BETA = 0.5 ## No clue ????
 	BATCH_SIZE = 64
 	NUM_EPISODES = 30_000
 	EP_LEN = 100
@@ -214,6 +216,9 @@ if __name__ == '__main__':
 		ACTION_RANGE, ACTOR_LR, CRITIC_LR, CRITIC_WD, 
 		GAMMA, TAU, EPSILON, EPS_DECAY, EPS_END, MEM_SIZE, 
 		BATCH_SIZE, NUM_EPISODES,EP_LEN)
+
+	agent.memory.alpha = MEM_ALPHA
+	agent.memory.beta = MEM_BETA
 
 	## Create env and agent
 	env = TSCSEnv()
