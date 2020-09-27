@@ -26,8 +26,6 @@ class NaivePrioritizedBuffer(object):
 	def __init__(self, capacity):
 		self.alpha = 0.7
 		self.beta = 0.5
-		self.betaAnneal = 0.999
-		self.betaEnd = 1
 		self.capacity = capacity
 		self.memory = []
 		self.idx = 0
