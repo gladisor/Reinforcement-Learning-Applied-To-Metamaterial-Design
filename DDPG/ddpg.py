@@ -28,6 +28,8 @@ class DDPG():
 		self.critic = Critic(inSize, criticNHidden, criticHSize, nActions)
 		self.targetCritic = Critic(inSize, criticNHidden, criticHSize, nActions)
 
+		self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
+		self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
 		## Define the optimizers for both networks
 		self.actorOpt = Adam(self.actor.parameters(), lr=actorLR)
 		self.criticOpt = Adam(self.critic.parameters(), lr=criticLR, weight_decay=criticWD)
@@ -59,7 +61,7 @@ class DDPG():
 	def select_action(self, state):
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
-			action = self.targetActor(state) + noise
+			action = self.targetActor(state.cuda()).cpu() + noise
 			action.clamp_(-self.actionRange, self.actionRange)
 			# action = self.actionRange * tanh(action) ## Try this instead of clamp
 		return action
@@ -82,7 +84,8 @@ class DDPG():
 			## Get data from memory
 			batch, indices, weights = self.memory.sample(self.batchSize)
 			s, a, r, s_, done = self.extract_tensors(batch)
-			weights = tensor([weights])
+			s, a, r, s_, done = s.cuda(), a.cuda(), r.cuda(), s_.cuda(), done.cuda()
+			weights = tensor([weights]).cuda()
 
 			## Compute target
 			maxQ = self.targetCritic(s_, self.targetActor(s_).detach())
@@ -116,7 +119,7 @@ class DDPG():
 
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
-		writer = SummaryWriter('runs/ddpg-attemptToReproduce-layerNorm')
+		writer = SummaryWriter('runs/ddpg-gpu')
 
 		for episode in range(self.numEpisodes):
 
@@ -189,10 +192,10 @@ class DDPG():
 if __name__ == '__main__':
 	# ddpg params
 	IN_SIZE 		= 21
-	ACTOR_N_HIDDEN 	= 2
+	ACTOR_N_HIDDEN 	= 4
 	ACTOR_H_SIZE 	= 128
-	CRITIC_N_HIDDEN = 6
-	CRITIC_H_SIZE 	= 128
+	CRITIC_N_HIDDEN = 8
+	CRITIC_H_SIZE 	= 256
 	N_ACTIONS 		= 8
 	ACTION_RANGE 	= 0.2
 	ACTOR_LR 		= 1e-4
@@ -203,7 +206,7 @@ if __name__ == '__main__':
 	EPSILON 		= 0.75		## Scale of random noise
 	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
 	EPS_END 		= 0.05 		## Lowest epsilon allowed
-	MEM_SIZE 		= 300_000 	## How many samples in priority queue
+	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
 	MEM_BETA 		= 0.5 		## No clue ????
 	BATCH_SIZE 		= 64
