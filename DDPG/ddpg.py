@@ -1,6 +1,6 @@
 from models import Actor, Critic
 import torch
-from torch import tensor, cat
+from torch import tensor, cat, tanh
 from torch.optim import Adam
 import torch.nn.functional as F
 from collections import namedtuple
@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from env import TSCSEnv
+import wandb
 
 class DDPG():
 	def __init__(self,
@@ -62,9 +63,16 @@ class DDPG():
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
 			action = self.targetActor(state.cuda()).cpu() + noise
-			action.clamp_(-self.actionRange, self.actionRange)
-			# action = self.actionRange * tanh(action) ## Try this instead of clamp
+			action = self.actionRange * tanh(action)
+			# action.clamp_(-self.actionRange, self.actionRange)
 		return action
+
+	def select_normal_action(self, state):
+		with torch.no_grad():
+			action = self.targetActor(state.cuda()).cpu()
+			noisyAction = np.random.normal(action, self.epsilon)
+			scaledAction = self.actionRange * tanh(tensor(noisyAction))
+		return scaledAction
 
 	def extract_tensors(self, batch):
 		batch = self.Transition(*zip(*batch))
@@ -119,27 +127,26 @@ class DDPG():
 
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
-		writer = SummaryWriter('runs/ddpg-gpu')
 
 		for episode in range(self.numEpisodes):
 
 			## Reset environment to starting state
-			state, rms = env.reset()
+			state = env.reset()
 			episode_reward = 0
 
 			## Log initial scattering at beginning of episode
-			initial = rms.item()
+			initial = env.RMS.item()
 			lowest = initial
 
 			for t in tqdm(range(self.epLen)):
 
 				## Select action and observe next state, reward
 				action = self.select_action(state)
-				nextState, rms, reward, done = env.step(action)
+				nextState, reward = env.step(action)
 				episode_reward += reward
 
 				# Update current lowest scatter
-				current = rms.item()
+				current = env.RMS.item()
 				if current < lowest:
 					lowest = current
 
@@ -154,8 +161,7 @@ class DDPG():
 				done = tensor([[done]])
 
 				## Store transition in memory
-				e = self.Transition(state, action, reward, nextState, done)
-				self.memory.push(e)
+				self.memory.push(self.Transition(state, action, reward, nextState, done))
 
 				## Preform bellman update
 				td = self.optimize_model()
@@ -176,9 +182,7 @@ class DDPG():
 				f'td:{round(td, 2)}, ' \
 				f'Epsilon: {round(self.epsilon, 2)}')
 
-			## Log score and lowest scattering configuration discovered in tensorboard
-			writer.add_scalar('train/score', episode_reward, episode)
-			writer.add_scalar('train/lowest', lowest, episode)
+			wandb.log({'epsilon':self.epsilon, 'lowest':lowest, 'score':episode_reward})
 
 			## Save models
 			if episode % self.saveModels == 0:
@@ -188,14 +192,13 @@ class DDPG():
 			## Reduce exploration
 			self.decay_epsilon()
 
-
 if __name__ == '__main__':
 	# ddpg params
 	IN_SIZE 		= 21
-	ACTOR_N_HIDDEN 	= 4
+	ACTOR_N_HIDDEN 	= 2
 	ACTOR_H_SIZE 	= 128
-	CRITIC_N_HIDDEN = 8
-	CRITIC_H_SIZE 	= 256
+	CRITIC_N_HIDDEN = 4
+	CRITIC_H_SIZE 	= 128
 	N_ACTIONS 		= 8
 	ACTION_RANGE 	= 0.2
 	ACTOR_LR 		= 1e-4
@@ -203,14 +206,14 @@ if __name__ == '__main__':
 	CRITIC_WD 		= 1e-2 		## How agressively to reduce overfitting
 	GAMMA 			= 0.99 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
-	EPSILON 		= 0.75		## Scale of random noise
+	EPSILON 		= 0.5		## Scale of random noise
 	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
-	EPS_END 		= 0.05 		## Lowest epsilon allowed
+	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
 	MEM_BETA 		= 0.5 		## No clue ????
 	BATCH_SIZE 		= 64
-	NUM_EPISODES 	= 30_000
+	NUM_EPISODES 	= 20_000
 	EP_LEN 			= 100
 
 	agent = DDPG(
@@ -237,6 +240,25 @@ if __name__ == '__main__':
 	## Setting memory hyperparameters
 	agent.memory.alpha = MEM_ALPHA
 	agent.memory.beta = MEM_BETA
+
+	wandb.init(project='my-project')
+	wandb.config.actor_n_hidden = ACTOR_N_HIDDEN
+	wandb.config.actor_h_size = ACTOR_H_SIZE
+	wandb.config.critic_n_hidden = CRITIC_N_HIDDEN
+	wandb.config.critic_h_size = CRITIC_H_SIZE
+	wandb.config.action_range = ACTION_RANGE
+	wandb.config.actor_lr = ACTOR_LR
+	wandb.config.critic_lr = CRITIC_LR
+	wandb.config.critic_wd = CRITIC_WD
+	wandb.config.gamma = GAMMA
+	wandb.config.tau = TAU
+	wandb.config.epsilon = EPSILON
+	wandb.config.eps_decay = EPS_DECAY
+	wandb.config.eps_end = EPS_END
+	wandb.config.mem_size = MEM_SIZE
+	wandb.config.alpha = MEM_ALPHA
+	wandb.config.beta = MEM_BETA
+	wandb.config.batch_size = BATCH_SIZE
 
 	## Create env and agent
 	env = TSCSEnv()

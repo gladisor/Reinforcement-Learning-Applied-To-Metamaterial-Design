@@ -112,9 +112,7 @@ class TSCSEnv():
 			reward = 0.2**(RMS.item()-1)-1
 		else:
 			reward = -1
-			
-		done = False
-		return reward, done
+		return reward
 
 	def reset(self):
 		"""
@@ -127,7 +125,7 @@ class TSCSEnv():
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
 		state = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float() 
-		return state, self.RMS
+		return state
 
 	def getNextConfig(self, config, action):
 		"""
@@ -155,42 +153,6 @@ class TSCSEnv():
 		self.counter += 1
 		time = self.getTime()
 
-		reward, done = self.getReward(self.RMS, isValid)
+		reward = self.getReward(self.RMS, isValid)
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float()
-		return nextState, self.RMS, reward, done
-
-if __name__ == '__main__':
-	import numpy as np
-	from models import Actor
-	inSize = 21
-	nHidden = 1
-	hSize = 128
-	nActions = 8
-
-	actor = Actor(inSize, nHidden, hSize, nActions)
-	actor.load_state_dict(torch.load('actor.pt'))
-
-	env = TSCSEnv()
-	state = env.reset()
-
-	plt.ion()
-	fig = plt.figure()
-	ax = fig.add_subplot()
-
-	img = env.getIMG(state[0])
-	myobj = ax.imshow(img.view(env.img_dim, env.img_dim))
-	print(f"RMS: {round(state[2].item(), 2)}")
-
-	for t in range(100):
-		action = actor(state)
-		print(f"Action: {action}")
-		state, reward, done = env.step(action)
-
-		img = env.getIMG(state[0])
-		myobj.set_data(img.view(env.img_dim, env.img_dim))
-		fig.canvas.draw()
-		fig.canvas.flush_events()
-		plt.pause(0.05)
-
-		print(f"RMS: {round(state[2].item(), 2)}")
-		print(f"Reward: {reward}")
+		return nextState, reward

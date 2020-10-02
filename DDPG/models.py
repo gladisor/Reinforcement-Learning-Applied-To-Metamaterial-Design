@@ -45,32 +45,3 @@ class Critic(nn.Module):
 			x = relu(layer(norm(x)))
 		x = self.value(x)
 		return x
-
-if __name__ == '__main__':
-	from env import TSCSEnv
-	import matplotlib.pyplot as plt
-
-	actor = Actor(21, 2, 128, 8)
-	actor.load_state_dict(torch.load('savedModels/actor.pt'))
-	env = TSCSEnv()
-	state, rms = env.reset()
-
-	plt.ion()
-	fig = plt.figure()
-	ax = fig.add_subplot()
-
-	img = env.getIMG(state[0,][0:8])
-	myobj = ax.imshow(img.view(env.img_dim, env.img_dim))
-
-	for t in range(100):
-		with torch.no_grad():
-			action = actor(state)
-		nextState, rms, reward, done = env.step(action)
-		print(rms, reward)
-		state = nextState
-
-		img = env.getIMG(state[0,][0:8])
-		myobj.set_data(img.view(env.img_dim, env.img_dim))
-		fig.canvas.draw()
-		fig.canvas.flush_events()
-		plt.pause(0.05)
