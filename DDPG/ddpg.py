@@ -63,16 +63,11 @@ class DDPG():
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
 			action = self.targetActor(state.cuda()).cpu() + noise
-			action = self.actionRange * tanh(action)
-			# action.clamp_(-self.actionRange, self.actionRange)
+			action.clamp_(-self.actionRange, self.actionRange)
 		return action
 
-	def select_normal_action(self, state):
-		with torch.no_grad():
-			action = self.targetActor(state.cuda()).cpu()
-			noisyAction = np.random.normal(action, self.epsilon)
-			scaledAction = self.actionRange * tanh(tensor(noisyAction))
-		return scaledAction
+	def select_action_ou(self, state):
+		pass
 
 	def extract_tensors(self, batch):
 		batch = self.Transition(*zip(*batch))
@@ -197,16 +192,16 @@ if __name__ == '__main__':
 	IN_SIZE 		= 21
 	ACTOR_N_HIDDEN 	= 2
 	ACTOR_H_SIZE 	= 128
-	CRITIC_N_HIDDEN = 4
+	CRITIC_N_HIDDEN = 8
 	CRITIC_H_SIZE 	= 128
 	N_ACTIONS 		= 8
 	ACTION_RANGE 	= 0.2
 	ACTOR_LR 		= 1e-4
 	CRITIC_LR 		= 1e-3
 	CRITIC_WD 		= 1e-2 		## How agressively to reduce overfitting
-	GAMMA 			= 0.99 		## How much to value future reward
+	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
-	EPSILON 		= 0.5		## Scale of random noise
+	EPSILON 		= 0.75		## Scale of random noise
 	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
@@ -241,7 +236,7 @@ if __name__ == '__main__':
 	agent.memory.alpha = MEM_ALPHA
 	agent.memory.beta = MEM_BETA
 
-	wandb.init(project='my-project')
+	wandb.init(project='tscs')
 	wandb.config.actor_n_hidden = ACTOR_N_HIDDEN
 	wandb.config.actor_h_size = ACTOR_H_SIZE
 	wandb.config.critic_n_hidden = CRITIC_N_HIDDEN
