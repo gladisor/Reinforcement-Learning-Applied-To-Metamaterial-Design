@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == '__main__':
+	import wandb
 	## Hyperparameters
 	GAMMA = 0.9
 	EPS = 1
@@ -24,14 +25,16 @@ if __name__ == '__main__':
 	N_HIDDEN = 1
 	STEP_SIZE = 0.5
 
+	wandb.init(project='tscs-ddqn')
+
 	## Creating agent object with parameters
 	agent = Agent(
 		GAMMA, EPS, EPS_END, EPS_DECAY, 
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
 	# Defining models
-	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN)
-	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN)
+	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN).cuda()
+	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN).cuda()
 	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
@@ -54,17 +57,6 @@ if __name__ == '__main__':
 	env = TSCSEnv(stepSize=STEP_SIZE)
 
 	step = 0
-	writer = SummaryWriter(
-		f'runs/' \
-		f'SGD' \
-		f'-{GAMMA}gamma' \
-		f'-{MOMENTUM}momentum' \
-		f'-{TARGET_UPDATE}targetupdate' \
-		f'-{N_HIDDEN}hidden' \
-		f'-{STEP_SIZE}stepsize' \
-		f'-{EPS_DECAY}epsDecay' \
-		f'-tdPriority' \
-		f'-testingENV')
 
 	for episode in range(NUM_EPISODES):
 		## Reset reward and env
@@ -118,6 +110,11 @@ if __name__ == '__main__':
 			f'Score:{round(episode_reward, 2)}, '\
 			f'Eps:{round(agent.eps, 2)}')
 
-		writer.add_scalar('train/score', episode_reward, episode)
-		writer.add_scalar('train/lowest', lowest, episode)
-	torch.save(agent.Qt.state_dict(), 'model.pt')
+		wandb.log({
+			'lowest':lowest,
+			'score':episode_reward
+			})
+
+		## Save models
+		if episode % 1000 == 0:
+			torch.save(agent.Qt.state_dict(), f'ddqn{episode}.pt')

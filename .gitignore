@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 
 DDPG/wandb
+DDQN/wandb
+DDQN/runs
 
 # C extensions
 *.so

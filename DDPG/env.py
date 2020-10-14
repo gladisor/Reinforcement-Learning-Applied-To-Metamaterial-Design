@@ -57,7 +57,7 @@ class TSCSEnv():
 		and not overlaping cylinders
 		"""
 		while True:
-			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
+			config = torch.FloatTensor(1, 2 * self.nCyl).uniform_(-5, 5)
 			if self.validConfig(config):
 				break
 		return config
@@ -112,6 +112,7 @@ class TSCSEnv():
 			reward = 0.2**(RMS.item()-1)-1
 		else:
 			reward = -1
+		# reward = -RMS.item()
 		return reward
 
 	def reset(self):

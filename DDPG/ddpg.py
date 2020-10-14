@@ -10,6 +10,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from env import TSCSEnv
 import wandb
+from noise import OrnsteinUhlenbeckActionNoise
 
 class DDPG():
 	def __init__(self,
@@ -67,7 +68,10 @@ class DDPG():
 		return action
 
 	def select_action_ou(self, state):
-		pass
+		with torch.no_grad():
+			action = self.targetActor(state.cuda()).cpu() + self.noise()
+			action.clamp_(-self.actionRange, self.actionRange)
+		return action
 
 	def extract_tensors(self, batch):
 		batch = self.Transition(*zip(*batch))
@@ -120,6 +124,27 @@ class DDPG():
 		self.epsilon *= self.epsDecay
 		self.epsilon = max(self.epsilon, self.epsEnd)
 
+	def evaluate(self, env):
+		state = env.reset()
+		episode_reward = 0
+
+		initial = env.RMS.item()
+		lowest = initial
+
+		for t in tqdm(range(self.epLen), desc="eval"):
+			with torch.no_grad():
+				action = self.targetActor(state.cuda()).cpu()
+
+			nextState, reward = env.step(action)
+			episode_reward += reward
+
+			current = env.RMS.item()
+			if current < lowest:
+				lowest = current
+
+			state = nextState
+		return episode_reward, lowest
+
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
 
@@ -133,7 +158,7 @@ class DDPG():
 			initial = env.RMS.item()
 			lowest = initial
 
-			for t in tqdm(range(self.epLen)):
+			for t in tqdm(range(self.epLen), desc="train"):
 
 				## Select action and observe next state, reward
 				action = self.select_action(state)
@@ -146,7 +171,7 @@ class DDPG():
 					lowest = current
 
 				## Check if terminal
-				if t == EP_LEN - 1:
+				if t == self.epLen - 1:
 					done = 1
 				else:
 					done = 0
@@ -177,7 +202,10 @@ class DDPG():
 				f'td:{round(td, 2)}, ' \
 				f'Epsilon: {round(self.epsilon, 2)}')
 
-			wandb.log({'epsilon':self.epsilon, 'lowest':lowest, 'score':episode_reward})
+			wandb.log({
+				'epsilon':self.epsilon, 
+				'lowest':lowest, 
+				'score':episode_reward})
 
 			## Save models
 			if episode % self.saveModels == 0:
