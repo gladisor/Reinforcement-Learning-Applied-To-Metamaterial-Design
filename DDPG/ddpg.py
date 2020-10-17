@@ -216,13 +216,19 @@ class DDPG():
 			self.decay_epsilon()
 
 if __name__ == '__main__':
+	## env params
+	NCYL = 4
+	KMAX = 0.5
+	KMIN = 0.3
+	NFREQ = 11
+
 	# ddpg params
 	IN_SIZE 		= 21
 	ACTOR_N_HIDDEN 	= 2
 	ACTOR_H_SIZE 	= 128
 	CRITIC_N_HIDDEN = 8
 	CRITIC_H_SIZE 	= 128
-	N_ACTIONS 		= 8
+	N_ACTIONS 		= 2 * NCYL
 	ACTION_RANGE 	= 0.2
 	ACTOR_LR 		= 1e-4
 	CRITIC_LR 		= 1e-3
@@ -265,6 +271,10 @@ if __name__ == '__main__':
 	agent.memory.beta = MEM_BETA
 
 	wandb.init(project='tscs')
+	wandb.config.nCyl = NCYL
+	wandb.config.kmax = KMAX
+	wandb.config.kmin = KMIN
+	wandb.config.nfreq = NFREQ
 	wandb.config.actor_n_hidden = ACTOR_N_HIDDEN
 	wandb.config.actor_h_size = ACTOR_H_SIZE
 	wandb.config.critic_n_hidden = CRITIC_N_HIDDEN
@@ -284,7 +294,7 @@ if __name__ == '__main__':
 	wandb.config.batch_size = BATCH_SIZE
 
 	## Create env and agent
-	env = TSCSEnv()
+	env = TSCSEnv(NCYL, KMAX, KMIN, NFREQ)
 
 	## Run training session
 	agent.learn(env)

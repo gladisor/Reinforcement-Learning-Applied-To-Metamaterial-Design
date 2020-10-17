@@ -32,7 +32,7 @@ def evaluate_actor(actor, env):
 
 if __name__ == '__main__':
 	actor = Actor(21, 2, 128, 8, 0.2)
-	actor.load_state_dict(torch.load('actor.pt'))
+	actor.load_state_dict(torch.load('savedModels/actor9000.pt'))
 	env = TSCSEnv()
 
 	evaluate_actor(actor, env)
