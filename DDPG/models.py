@@ -39,7 +39,7 @@ class Critic(nn.Module):
 		self.value = nn.Linear(hSize, 1)
 
 	def forward(self, state, action):
-		x = cat([state, action], dim=-1).float()
+		x = cat([state.float(), action.float()], dim=-1).float()
 		x = relu(self.fc(x))
 		for layer, norm in zip(self.layers, self.norms):
 			x = relu(layer(norm(x)))

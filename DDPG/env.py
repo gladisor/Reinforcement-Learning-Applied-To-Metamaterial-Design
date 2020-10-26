@@ -166,5 +166,5 @@ class TSCSEnv():
 		time = self.getTime()
 
 		reward = self.getReward(self.RMS, isValid)
-		nextState = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float()
+		nextState = torch.cat([self.config.double(), self.TSCS.double(), self.RMS.double(), time.double()], dim=-1).float()
 		return nextState, reward

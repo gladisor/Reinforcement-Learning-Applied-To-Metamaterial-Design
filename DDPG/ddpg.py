@@ -63,7 +63,7 @@ class DDPG():
 	def select_action(self, state):
 		with torch.no_grad():
 			noise = np.random.normal(0, self.epsilon, self.nActions)
-			action = self.targetActor(state.cuda()).cpu() + noise
+			action = self.targetActor(state.cuda()).cpu() + torch.tensor([noise])
 			action.clamp_(-self.actionRange, self.actionRange)
 		return action
 
