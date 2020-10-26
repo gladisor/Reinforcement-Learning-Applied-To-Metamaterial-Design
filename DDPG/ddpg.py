@@ -10,6 +10,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from env import TSCSEnv
 import wandb
+import os
 from noise import OrnsteinUhlenbeckActionNoise
 
 class DDPG():
@@ -181,7 +182,7 @@ class DDPG():
 				done = tensor([[done]])
 
 				## Store transition in memory
-				self.memory.push(self.Transition(state, action, reward, nextState, done))
+				self.memory.push(tmemory,self.Transition(state, action, reward, nextState, done))
 
 				## Preform bellman update
 				td = self.optimize_model()
@@ -296,5 +297,11 @@ if __name__ == '__main__':
 	## Create env and agent
 	env = TSCSEnv(NCYL, KMAX, KMIN, NFREQ)
 
+	## Create transition memory database
+	tmemory = open(os.path.join(wandb.run.dir,"transition_db.json"), "w+")
+
 	## Run training session
 	agent.learn(env)
+
+	## Closing memory database
+	tmemory.close()
