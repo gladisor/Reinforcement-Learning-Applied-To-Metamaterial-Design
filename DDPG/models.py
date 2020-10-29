@@ -45,3 +45,5 @@ class Critic(nn.Module):
 			x = relu(layer(norm(x)))
 		x = self.value(x)
 		return x
+
+print("pp")
