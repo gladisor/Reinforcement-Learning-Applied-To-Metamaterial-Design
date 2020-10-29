@@ -25,6 +25,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.TSCS = None
 		self.RMS = None
 		self.timestep = None
+		self.lowest = None
 
 		## Observation and action space
 		self.observation_space = Box(
@@ -88,6 +89,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.timestep = np.array([[0.0]])
+		self.lowest = self.RMS
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state
 
@@ -119,13 +121,17 @@ class DistributedTSCSEnv(gym.Env):
 		reward = self.getReward(self.RMS, valid)
 		self.timestep += 1/self.episodeLength
 
+		if self.RMS < self.lowest:
+			self.lowest = self.RMS
+
 		done = False
 		if int(self.timestep) == 1:
 			done = True
 
 		info = {
 			'meanTSCS':self.TSCS.mean(),
-			'rms':self.RMS}
+			'rms':self.RMS,
+			'lowest':self.lowest}
 
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state, reward, done, info
