@@ -89,7 +89,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.timestep = np.array([[0.0]])
-		self.lowest = self.RMS
+		self.lowest = np.asscalar(self.RMS)
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state
 
@@ -98,10 +98,9 @@ class DistributedTSCSEnv(gym.Env):
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		if isValid:
-			reward = np.asscalar(-np.sqrt(RMS))
-		else:
-			reward = -1.
+		reward = -np.sqrt(RMS).item()
+		if not isValid:
+			reward += -1.0
 		return reward
 
 	def step(self, action):
@@ -122,7 +121,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.timestep += 1/self.episodeLength
 
 		if self.RMS < self.lowest:
-			self.lowest = self.RMS
+			self.lowest = self.RMS.item()
 
 		done = False
 		if int(self.timestep) == 1:

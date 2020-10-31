@@ -9,7 +9,7 @@ import io
 ## 4 Cylinder TSCS
 class TSCSEnv():
 	"""docstring for TSCSEnv"""
-	def __init__(self, nCyl=4, k0amax=0.5, k0amin=0.4, nfreq=11):
+	def __init__(self, nCyl=4, k0amax=0.5, k0amin=0.3, nfreq=11):
 		## Matlab interface
 		self.eng = matlab.engine.start_matlab()
 		self.eng.addpath('TSCS')
@@ -119,11 +119,13 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		if isValid:
-			reward = 0.2**(RMS.item()-1)-1
-		else:
-			reward = -1
-		# reward = -RMS.item()
+		# if isValid:
+		# 	reward = 0.2**(RMS.item()-1)-1
+		# else:
+		# 	reward = -1
+		reward = -RMS.item()
+		if not isValid:
+			reward += -2.0
 		return reward
 
 	def reset(self):

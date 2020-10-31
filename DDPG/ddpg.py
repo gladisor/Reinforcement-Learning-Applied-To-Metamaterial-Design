@@ -7,7 +7,6 @@ from collections import namedtuple
 from memory import NaivePrioritizedBuffer
 import numpy as np
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
 from env import TSCSEnv
 import wandb
 from noise import OrnsteinUhlenbeckActionNoise
@@ -121,7 +120,8 @@ class DDPG():
 			return td.mean().item()
 
 	def decay_epsilon(self):
-		self.epsilon *= self.epsDecay
+		# self.epsilon *= self.epsDecay
+		self.epsilon -= (1.2 - 0.02) / 15000
 		self.epsilon = max(self.epsilon, self.epsEnd)
 
 	def evaluate(self, env):
@@ -218,8 +218,8 @@ class DDPG():
 if __name__ == '__main__':
 	## env params
 	NCYL = 4
-	KMAX = 0.5
-	KMIN = 0.3
+	KMAX = 2.0
+	KMIN = 1.0
 	NFREQ = 11
 
 	# ddpg params
@@ -235,7 +235,7 @@ if __name__ == '__main__':
 	CRITIC_WD 		= 1e-2 		## How agressively to reduce overfitting
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
-	EPSILON 		= 0.75		## Scale of random noise
+	EPSILON 		= 1.20		## Scale of random noise
 	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
