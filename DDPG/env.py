@@ -25,7 +25,7 @@ class TSCSEnv():
 		self.config = None
 		self.TSCS = None
 		self.RMS = None
-		# self.img = None
+		self.img = None
 		self.counter = None
 
 		## Image transform
@@ -87,6 +87,8 @@ class TSCSEnv():
 		"""
 		Produces tensor image of configuration
 		"""
+		## To avoind repeatedly displaying figure while training ImageDDPG
+		plt.ioff()
 		## Generate figure
 		fig, ax = plt.subplots(figsize=(6, 6))
 		ax.axis('equal')
@@ -132,7 +134,8 @@ class TSCSEnv():
 		"""
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
-		# self.img = self.getIMG(self.config)
+		self.img = self.getIMG(self.config)
+
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
 		state = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float() 
@@ -156,6 +159,7 @@ class TSCSEnv():
 
 		if isValid:
 			self.config = nextConfig
+			self.img = self.getIMG(self.config)
 		else: ## Invalid next state, do not change state variables
 			self.config = prevConfig
 

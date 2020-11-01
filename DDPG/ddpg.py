@@ -30,6 +30,8 @@ class DDPG():
 		self.critic = Critic(inSize, criticNHidden, criticHSize, nActions)
 		self.targetCritic = Critic(inSize, criticNHidden, criticHSize, nActions)
 
+
+
 		self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
 		self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
 		## Define the optimizers for both networks
@@ -152,6 +154,7 @@ class DDPG():
 
 			## Reset environment to starting state
 			state = env.reset()
+
 			episode_reward = 0
 
 			## Log initial scattering at beginning of episode
