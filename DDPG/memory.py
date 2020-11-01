@@ -31,12 +31,19 @@ class NaivePrioritizedBuffer(object):
 		self.idx = 0
 		self.priorities = np.ones((capacity,), dtype=np.float32)
 
-	def push(self, transition):
+	def push(self, storage_database,transition):
 		if len(self.memory) < self.capacity:
 			self.memory.append(None)
 		self.memory[self.idx] = transition
 		self.priorities[self.idx] = self.priorities.max()
 		self.idx = (self.idx + 1) % self.capacity
+
+		## Store transition in database
+		np.savetxt(storage_database, transition[0], delimiter=',', newline=';')
+		np.savetxt(storage_database, transition[1], delimiter=',', newline=';')
+		np.savetxt(storage_database, transition[2], delimiter=',', newline=';')
+		np.savetxt(storage_database, transition[3], delimiter=',', newline=';')
+		np.savetxt(storage_database, transition[4], delimiter=',', newline=';\n')
 
 	def sample(self, batch_size):
 		if len(self.memory) == self.capacity:
