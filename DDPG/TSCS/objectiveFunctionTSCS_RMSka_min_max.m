@@ -20,7 +20,7 @@ Q =zeros(nfreq,1);
 s_j = zeros(nfreq,M,2) ;
 q_j = zeros(nfreq,M,2) ;
 
-parfor Ifreq=1:length(freqv)
+for Ifreq=1:length(freqv)
     freq=freqv(Ifreq);   omega = 2*pi*freq;    
     k0 = omega/c0;
     ka=k0*a;
