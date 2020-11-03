@@ -42,6 +42,7 @@ class DDPG():
 		## Various hyperparameters
 		self.gamma = gamma
 		self.tau = tau
+		self.epsStart = epsilon
 		self.epsilon = epsilon
 		self.epsDecay = epsDecay
 		self.epsEnd = epsEnd
@@ -121,7 +122,7 @@ class DDPG():
 
 	def decay_epsilon(self):
 		# self.epsilon *= self.epsDecay
-		self.epsilon -= (1.2 - 0.02) / 15000
+		self.epsilon -= (self.epsStart - self.epsEnd) / 10_000
 		self.epsilon = max(self.epsilon, self.epsEnd)
 
 	def evaluate(self, env):
@@ -194,13 +195,13 @@ class DDPG():
 
 			## Print episode statistics to console
 			print(
-				f'#:{episode}, ' \
+				f'\n#:{episode}, ' \
 				f'I:{round(initial, 2)}, ' \
 				f'Lowest:{round(lowest, 2)}, ' \
 				f'F:{round(current, 2)}, '\
 				f'Score:{round(episode_reward, 2)}, ' \
 				f'td:{round(td, 2)}, ' \
-				f'Epsilon: {round(self.epsilon, 2)}')
+				f'Epsilon: {round(self.epsilon, 2)}\n')
 
 			wandb.log({
 				'epsilon':self.epsilon, 
@@ -217,13 +218,13 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 4
-	KMAX = 2.0
-	KMIN = 1.0
+	NCYL = 8
+	KMAX = 0.45
+	KMIN = 0.35
 	NFREQ = 11
 
 	# ddpg params
-	IN_SIZE 		= 21
+	IN_SIZE 		= 2 * NCYL + NFREQ + 2
 	ACTOR_N_HIDDEN 	= 2
 	ACTOR_H_SIZE 	= 128
 	CRITIC_N_HIDDEN = 8

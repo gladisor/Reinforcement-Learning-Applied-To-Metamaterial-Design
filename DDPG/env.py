@@ -73,16 +73,6 @@ class TSCSEnv():
 		rms = tscs.pow(2).mean().sqrt().view(1,1)
 		return tscs, rms
 
-	# def getTSCS(self, config):
-	# 	## Gets tscs of configuration from matlab
-	# 	tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
-	# 	return torch.tensor(tscs).T
-
-	# def getRMS(self, config):
-	# 	## Gets rms of configuration from matlab
-	# 	rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
-	# 	return torch.tensor([[rms]])
-
 	def getIMG(self, config):
 		"""
 		Produces tensor image of configuration
@@ -125,7 +115,7 @@ class TSCSEnv():
 		# 	reward = -1
 		reward = -RMS.item()
 		if not isValid:
-			reward += -2.0
+			reward += -1.0
 		return reward
 
 	def reset(self):
@@ -134,7 +124,6 @@ class TSCSEnv():
 		"""
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
-		# self.img = self.getIMG(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
 		state = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float() 
@@ -162,8 +151,6 @@ class TSCSEnv():
 			self.config = prevConfig
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
-		# self.TSCS = self.getTSCS(self.config)
-		# self.RMS = self.getRMS(self.config)
 		self.counter += 1
 		time = self.getTime()
 
