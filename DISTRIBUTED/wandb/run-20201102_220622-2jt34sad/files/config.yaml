@@ -1,0 +1,51 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.5
+batch_size:
+  desc: null
+  value: 64
+env_config:
+  desc: null
+  value:
+    actionRange: 0.5
+    episodeLength: 100
+    k0amax: 0.45
+    k0amin: 0.35
+    nCyl: 4
+    nFreq: 11
+gamma:
+  desc: null
+  value: 0.9
+model:
+  desc: null
+  value:
+    actor_fc:
+    - 128
+    - 128
+    actor_lr: 0.0001
+    critic_fc:
+    - 128
+    - 128
+    - 128
+    - 128
+    critic_lr: 0.001
+    critic_wd: 0.01
+num_env_workers:
+  desc: null
+  value: 8
+num_epochs:
+  desc: null
+  value: 10
+num_learner_workers:
+  desc: null
+  value: 1
+tau:
+  desc: null
+  value: 0.001

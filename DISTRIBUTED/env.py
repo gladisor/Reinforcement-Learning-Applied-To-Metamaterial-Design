@@ -26,6 +26,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.RMS = None
 		self.timestep = None
 		self.lowest = None
+		self.numIllegalMoves = None
 
 		## Observation and action space
 		self.observation_space = Box(
@@ -37,7 +38,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.action_space = Box(
 			low=-self.actionRange,
 			high=self.actionRange,
-			shape=(1, self.nCyl * 2))
+			shape=(self.nCyl * 2,))
 
 	def validConfig(self, config):
 		"""
@@ -86,6 +87,7 @@ class DistributedTSCSEnv(gym.Env):
 		"""
 		Generates starting config and calculates its tscs
 		"""
+		self.numIllegalMoves = 0
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.timestep = np.array([[0.0]])
@@ -98,7 +100,7 @@ class DistributedTSCSEnv(gym.Env):
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		reward = -np.sqrt(RMS).item()
+		reward = -RMS.item()
 		if not isValid:
 			reward += -1.0
 		return reward
@@ -115,6 +117,8 @@ class DistributedTSCSEnv(gym.Env):
 		if self.validConfig(nextConfig):
 			self.config = nextConfig
 			valid = True
+		else:
+			self.numIllegalMoves += 1
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		reward = self.getReward(self.RMS, valid)
@@ -130,7 +134,8 @@ class DistributedTSCSEnv(gym.Env):
 		info = {
 			'meanTSCS':self.TSCS.mean(),
 			'rms':self.RMS,
-			'lowest':self.lowest}
+			'lowest':self.lowest,
+			'numIllegalMoves': self.numIllegalMoves}
 
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state, reward, done, info
