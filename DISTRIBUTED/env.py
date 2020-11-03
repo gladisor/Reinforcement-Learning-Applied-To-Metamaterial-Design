@@ -37,7 +37,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.action_space = Box(
 			low=-self.actionRange,
 			high=self.actionRange,
-			shape=(int(self.nCyl * 2),))
+			shape=(1, self.nCyl * 2))
 
 	def validConfig(self, config):
 		"""
@@ -89,7 +89,7 @@ class DistributedTSCSEnv(gym.Env):
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.timestep = np.array([[0.0]])
-		self.lowest = np.asscalar(self.RMS)
+		self.lowest = self.RMS.item()
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state
 
@@ -136,6 +136,8 @@ class DistributedTSCSEnv(gym.Env):
 		return state, reward, done, info
 
 if __name__ == '__main__':
+	import time
+
 	config = {
 		'nCyl':4,
 		'k0amax':0.5,
@@ -145,10 +147,13 @@ if __name__ == '__main__':
 		'episodeLength':100}
 
 	env = DistributedTSCSEnv(config)
-	state = env.reset()
 
+	start = time.time()
+
+	state = env.reset()
 	done = False
 	while not done:
 		action = env.action_space.sample()
-		print(env.config, env.timestep)
 		state, reward, done, info = env.step(action)
+
+	print(f'Episode took: {time.time() - start} seconds')
