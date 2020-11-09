@@ -74,16 +74,6 @@ class TSCSEnv():
 		rms = tscs.pow(2).mean().sqrt().view(1,1)
 		return tscs, rms
 
-	# def getTSCS(self, config):
-	# 	## Gets tscs of configuration from matlab
-	# 	tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
-	# 	return torch.tensor(tscs).T
-
-	# def getRMS(self, config):
-	# 	## Gets rms of configuration from matlab
-	# 	rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
-	# 	return torch.tensor([[rms]])
-
 	def getIMG(self, config):
 		"""
 		Produces tensor image of configuration
@@ -120,11 +110,9 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		if isValid:
-			reward = 0.2**(RMS.item()-1)-1
-		else:
-			reward = -1
-		# reward = -RMS.item()
+		reward = -RMS.item()
+		if not isValid:
+			reward += -1.0
 		return reward
 
 	def reset(self):
