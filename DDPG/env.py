@@ -27,6 +27,7 @@ class TSCSEnv():
 		self.RMS = None
 		# self.img = None
 		self.counter = None
+		self.numIllegalMoves = None
 
 		## Image transform
 		self.img_dim = 50
@@ -130,6 +131,7 @@ class TSCSEnv():
 		"""
 		Generates starting config and calculates its tscs
 		"""
+		self.numIllegalMoves = 0
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		# self.img = self.getIMG(self.config)
@@ -158,6 +160,7 @@ class TSCSEnv():
 			self.config = nextConfig
 		else: ## Invalid next state, do not change state variables
 			self.config = prevConfig
+			self.numIllegalMoves +=1
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		# self.TSCS = self.getTSCS(self.config)
