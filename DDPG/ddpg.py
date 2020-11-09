@@ -182,7 +182,7 @@ class DDPG():
 				done = tensor([[done]])
 
 				## Store transition in memory
-				self.memory.push(tmemory,self.Transition(state, action, reward, nextState, done))
+				self.memory.push(memoryDB,self.Transition(state, action, reward, nextState, done))
 
 				## Preform bellman update
 				td = self.optimize_model()
@@ -298,10 +298,22 @@ if __name__ == '__main__':
 	env = TSCSEnv(NCYL, KMAX, KMIN, NFREQ)
 
 	## Create transition memory database
-	tmemory = open(os.path.join(wandb.run.dir,"transition_db.json"), "w+")
+	memory_database = namedtuple(
+			'memory_database',
+			('s','a','r','s_','done'))
+	tstate = open(os.path.join(wandb.run.dir, "state.csv"), "w+")
+	tactor = open(os.path.join(wandb.run.dir, "actor.csv"), "w+")
+	treward = open(os.path.join(wandb.run.dir, "reward.csv"), "w+")
+	tnextstate = open(os.path.join(wandb.run.dir, "nextstate.csv"), "w+")
+	tdone = open(os.path.join(wandb.run.dir, "done.csv"), "w+")
+	memoryDB = memory_database(tstate,tactor,treward,tnextstate,tdone)
 
 	## Run training session
 	agent.learn(env)
 
 	## Closing memory database
-	tmemory.close()
+	tstate.close()
+	tactor.close()
+	treward.close()
+	tnextstate.close()
+	tdone.close()

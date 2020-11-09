@@ -39,11 +39,11 @@ class NaivePrioritizedBuffer(object):
 		self.idx = (self.idx + 1) % self.capacity
 
 		## Store transition in database
-		np.savetxt(storage_database, transition[0], delimiter=',', newline=';')
-		np.savetxt(storage_database, transition[1], delimiter=',', newline=';')
-		np.savetxt(storage_database, transition[2], delimiter=',', newline=';')
-		np.savetxt(storage_database, transition[3], delimiter=',', newline=';')
-		np.savetxt(storage_database, transition[4], delimiter=',', newline=';\n')
+		np.savetxt(storage_database[0], transition[0], delimiter=',', newline='\n')
+		np.savetxt(storage_database[1], transition[1], delimiter=',', newline='\n')
+		np.savetxt(storage_database[2], transition[2], delimiter=',', newline='\n')
+		np.savetxt(storage_database[3], transition[3], delimiter=',', newline='\n')
+		np.savetxt(storage_database[4], transition[4], delimiter=',', newline='\n')
 
 	def sample(self, batch_size):
 		if len(self.memory) == self.capacity:
