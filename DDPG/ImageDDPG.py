@@ -8,45 +8,44 @@ from memory import NaivePrioritizedBuffer
 import numpy as np
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from env import TSCSEnv
+from environment import TSCSEnv
 import wandb
 from noise import OrnsteinUhlenbeckActionNoise
+import utils
 
 
 class DDPG():
-    def __init__(self,
-                 inSize, actorNHidden, actorHSize, criticNHidden, criticHSize,
-                 nActions, actionRange, actorLR, criticLR, criticWD,
-                 gamma, tau, epsilon, epsDecay, epsEnd,
-                 memSize, batchSize, numEpisodes, epLen):
+    def __init__(self, params):
 
         super(DDPG, self).__init__()
         ## Actions
-        self.nActions = nActions
-        self.actionRange = actionRange
+        self.nActions = params.N_ACTIONS
+        self.actionRange = params.ACTION_RANGE
 
         ## Networks
-        self.actor = ImageActor(inSize, actorNHidden, actorHSize, nActions, actionRange)
-        self.targetActor = ImageActor(inSize, actorNHidden, actorHSize, nActions, actionRange)
-        self.critic = ImageCritic(inSize, criticNHidden, criticHSize, nActions)
-        self.targetCritic = ImageCritic(inSize, criticNHidden, criticHSize, nActions)
+        self.actor = ImageActor(params.IN_SIZE, params.ACTOR_N_HIDDEN, params.ACTOR_H_SIZE, params.N_ACTIONS, params.ACTION_RANGE)
+        self.targetActor = ImageActor(params.IN_SIZE, params.ACTOR_N_HIDDEN, params.ACTOR_H_SIZE, params.N_ACTIONS, params.ACTION_RANGE)
+        self.critic = ImageCritic(params.IN_SIZE, params.CRITIC_N_HIDDEN, params.CRITIC_H_SIZE, params.N_ACTIONS)
+        self.targetCritic = ImageCritic(params.IN_SIZE, params.CRITIC_N_HIDDEN, params.CRITIC_H_SIZE, params.N_ACTIONS)
 
-        self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
-        self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
+        if torch.cuda.is_available():
+            self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
+            self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
+
         ## Define the optimizers for both networks
-        self.actorOpt = Adam(self.actor.parameters(), lr=actorLR)
-        self.criticOpt = Adam(self.critic.parameters(), lr=criticLR, weight_decay=criticWD)
+        self.actorOpt = Adam(self.actor.parameters(), lr=params.ACTOR_LR)
+        self.criticOpt = Adam(self.critic.parameters(), lr=params.CRITIC_LR, weight_decay=params.CRITIC_WD)
 
         ## Hard update
         self.targetActor.load_state_dict(self.actor.state_dict())
         self.targetCritic.load_state_dict(self.critic.state_dict())
 
         ## Various hyperparameters
-        self.gamma = gamma
-        self.tau = tau
-        self.epsilon = epsilon
-        self.epsDecay = epsDecay
-        self.epsEnd = epsEnd
+        self.gamma = params.GAMMA
+        self.tau = params.TAU
+        self.epsilon = params.EPSILON
+        self.epsDecay = params.EPS_DECAY
+        self.epsEnd = params.EPS_END
 
         ## Transition tuple to store experience
         self.Transition = namedtuple(
@@ -54,11 +53,11 @@ class DDPG():
             ('s','img', 'a', 'r', 's_', 'nextImg','done'))
 
         ## Allocate memory for replay buffer and set batch size
-        self.memory = NaivePrioritizedBuffer(memSize)
-        self.batchSize = batchSize
+        self.memory = NaivePrioritizedBuffer(params.MEM_SIZE)
+        self.batchSize = params.BATCH_SIZE
 
-        self.numEpisodes = numEpisodes
-        self.epLen = epLen
+        self.numEpisodes = params.NUM_EPISODES
+        self.epLen = params.EP_LEN
         self.saveModels = 1000
 
     def select_action(self, img, state):
@@ -197,7 +196,7 @@ class DDPG():
                     break
 
                 state = nextState
-                img = nextImage
+
 
             ## Print episode statistics to console
             print(
@@ -224,85 +223,21 @@ class DDPG():
 
 
 if __name__ == '__main__':
-    ## env params
-    NCYL = 4
-    KMAX = 0.5
-    KMIN = 0.3
-    NFREQ = 11
 
-    # ddpg params
-    IN_SIZE = 821
-    ACTOR_N_HIDDEN = 2
-    ACTOR_H_SIZE = 128
-    CRITIC_N_HIDDEN = 8
-    CRITIC_H_SIZE = 128
-    N_ACTIONS = 2 * NCYL
-    ACTION_RANGE = 0.2
-    ACTOR_LR = 1e-4
-    CRITIC_LR = 1e-3
-    CRITIC_WD = 1e-2  ## How agressively to reduce overfitting
-    GAMMA = 0.90  ## How much to value future reward
-    TAU = 0.001  ## How much to update target network every step
-    EPSILON = 0.75  ## Scale of random noise
-    EPS_DECAY = 0.9998  ## How slowly to reduce epsilon
-    EPS_END = 0.02  ## Lowest epsilon allowed
-    MEM_SIZE = 1_000_000  ## How many samples in priority queue
-    MEM_ALPHA = 0.7  ## How much to use priority queue (0 = not at all, 1 = maximum)
-    MEM_BETA = 0.5  ## No clue ????
-    BATCH_SIZE = 64
-    NUM_EPISODES = 20_000
-    EP_LEN = 100
+    params = utils.Params('Params.json')
+    params.N_ACTIONS = int(2 * params.NCYL)
 
-    agent = DDPG(
-        IN_SIZE,
-        ACTOR_N_HIDDEN,
-        ACTOR_H_SIZE,
-        CRITIC_N_HIDDEN,
-        CRITIC_H_SIZE,
-        N_ACTIONS,
-        ACTION_RANGE,
-        ACTOR_LR,
-        CRITIC_LR,
-        CRITIC_WD,
-        GAMMA,
-        TAU,
-        EPSILON,
-        EPS_DECAY,
-        EPS_END,
-        MEM_SIZE,
-        BATCH_SIZE,
-        NUM_EPISODES,
-        EP_LEN)
+    agent = DDPG(params)
 
     ## Setting memory hyperparameters
-    agent.memory.alpha = MEM_ALPHA
-    agent.memory.beta = MEM_BETA
+    agent.memory.alpha = params.MEM_ALPHA
+    agent.memory.beta = params.MEM_BETA
 
-    wandb.init(project='tscs')
-    wandb.config.nCyl = NCYL
-    wandb.config.kmax = KMAX
-    wandb.config.kmin = KMIN
-    wandb.config.nfreq = NFREQ
-    wandb.config.actor_n_hidden = ACTOR_N_HIDDEN
-    wandb.config.actor_h_size = ACTOR_H_SIZE
-    wandb.config.critic_n_hidden = CRITIC_N_HIDDEN
-    wandb.config.critic_h_size = CRITIC_H_SIZE
-    wandb.config.action_range = ACTION_RANGE
-    wandb.config.actor_lr = ACTOR_LR
-    wandb.config.critic_lr = CRITIC_LR
-    wandb.config.critic_wd = CRITIC_WD
-    wandb.config.gamma = GAMMA
-    wandb.config.tau = TAU
-    wandb.config.epsilon = EPSILON
-    wandb.config.eps_decay = EPS_DECAY
-    wandb.config.eps_end = EPS_END
-    wandb.config.mem_size = MEM_SIZE
-    wandb.config.alpha = MEM_ALPHA
-    wandb.config.beta = MEM_BETA
-    wandb.config.batch_size = BATCH_SIZE
+    utils.call_wandb(params)
+
 
     ## Create env and agent
-    env = TSCSEnv(NCYL, KMAX, KMIN, NFREQ)
+    env = TSCSEnv(params)
 
     ## Run training session
     agent.learn(env)
