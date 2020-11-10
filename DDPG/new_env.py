@@ -139,7 +139,7 @@ class TSCSEnv():
         Computes reward based on change in scattering
         proporitional to how close it is to zero
         """
-        reward = 1 / RMS.item() - 1000 * np.log(penalty+1)
+        reward = 1 / RMS.item() - 10 * np.log(penalty+1)
 
         return reward
 

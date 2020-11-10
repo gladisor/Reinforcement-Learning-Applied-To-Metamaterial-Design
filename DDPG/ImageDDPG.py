@@ -8,7 +8,7 @@ from memory import NaivePrioritizedBuffer
 import numpy as np
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from environment import TSCSEnv
+from new_env import TSCSEnv
 import wandb
 from noise import OrnsteinUhlenbeckActionNoise
 import utils
@@ -199,19 +199,16 @@ class DDPG():
 
 
             ## Print episode statistics to console
-            print(
-                f'#:{episode}, ' \
-                f'I:{round(initial, 2)}, ' \
-                f'Lowest:{round(lowest, 2)}, ' \
-                f'F:{round(current, 2)}, ' \
-                f'Score:{round(episode_reward, 2)}, ' \
-                f'td:{round(td, 2)}, ' \
-                f'Epsilon: {round(self.epsilon, 2)}')
+            print('lowest: ' + str(lowest) + '\n')
+            print('episode_reward: ' + str(episode_reward) + '\n')
+            print('epsilon: ' + str(self.epsilon) + '\n')
 
-            wandb.log({
-                'epsilon': self.epsilon,
-                'lowest': lowest,
-                'score': episode_reward})
+            params.epsilon = np.append(params.epsilon, self.epsilon)
+            params.reward = np.append(params.reward, episode_reward)
+            params.lowest = np.append(params.lowest, lowest)
+            # Update result to wandb
+            # utils.log_wandb(self.epsilon, lowest, episode_reward)
+
 
             ## Save models
             if episode % self.saveModels == 0:
@@ -226,18 +223,28 @@ if __name__ == '__main__':
 
     params = utils.Params('Params.json')
     params.N_ACTIONS = int(2 * params.NCYL)
+    params.reward = np.array([])
+    params.lowest = np.array([])
+    params.epsilon = np.array([])
 
     agent = DDPG(params)
 
-    ## Setting memory hyperparameters
+    # Setting memory hyperparameters
     agent.memory.alpha = params.MEM_ALPHA
     agent.memory.beta = params.MEM_BETA
 
-    utils.call_wandb(params)
+    # utils.init_wandb(params)
 
 
-    ## Create env and agent
+    # Create env and agent
     env = TSCSEnv(params)
 
-    ## Run training session
+    # Run training session
     agent.learn(env)
+
+    # plot and save data
+    utils.plot('reward', params.reward)
+    utils.plot('lowest', params.lowest)
+    utils.plot('epsilon', params.epsilon)
+
+
