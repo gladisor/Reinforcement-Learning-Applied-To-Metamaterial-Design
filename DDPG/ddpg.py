@@ -37,6 +37,9 @@ class DDPG():
 		self.actorOpt = Adam(self.actor.parameters(), lr=actorLR)
 		self.criticOpt = Adam(self.critic.parameters(), lr=criticLR, weight_decay=criticWD)
 
+		## Set exploration strategy
+		self.exploration_strategy = OrnsteinUhlenbeckActionNoise()
+
 		## Hard update
 		self.targetActor.load_state_dict(self.actor.state_dict())
 		self.targetCritic.load_state_dict(self.critic.state_dict())
