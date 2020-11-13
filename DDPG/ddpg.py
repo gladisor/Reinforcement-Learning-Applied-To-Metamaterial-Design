@@ -45,6 +45,7 @@ class DDPG():
 		self.gamma = gamma
 		self.tau = tau
 		self.epsilon = epsilon
+		self.epsStart = epsilon
 		self.epsDecay = epsDecay
 		self.epsEnd = epsEnd
 
@@ -122,7 +123,7 @@ class DDPG():
 			return td.mean().item()
 
 	def decay_epsilon(self):
-		self.epsilon *= self.epsDecay
+		self.epsilon -= (self.epsStart - self.epsEnd) / self.epsDecay
 		self.epsilon = max(self.epsilon, self.epsEnd)
 
 	def evaluate(self, env):
@@ -237,7 +238,7 @@ if __name__ == '__main__':
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
 	EPSILON 		= 0.75		## Scale of random noise
-	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
+	EPS_DECAY 		= 5_000		## Number of episodes to reduce epsilon over
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
