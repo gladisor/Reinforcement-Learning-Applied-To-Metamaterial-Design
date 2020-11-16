@@ -22,7 +22,7 @@
     "MEM_ALPHA": 0.7,
     "MEM_BETA": 0.5,
     "BATCH_SIZE": 64,
-    "NUM_EPISODES": 200,
+    "NUM_EPISODES": 2000,
     "EP_LEN": 100,
     "PROJECT_NAME": "TSCS",
     "saveModels": 100

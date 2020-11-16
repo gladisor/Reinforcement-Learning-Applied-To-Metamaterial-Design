@@ -29,7 +29,8 @@ class TSCSEnv():
         self.RMS = None
         self.img = None
         self.counter = None
-        self.isValid = None
+        self.numIllegalMoves = 0
+
 
         # Image transform
         self.img_dim = 50
@@ -169,11 +170,18 @@ class TSCSEnv():
         we revert back to previous state and give negative reward
         otherwise, reward is calculated by the change in scattering
         """
+        prevConfig = self.config.clone()
         nextConfig = self.getNextConfig(self.config, action)
-        penalty = self.getPenalty(nextConfig)
+        isValid = self.validConfig(self.config)
 
-        self.config = nextConfig
-        self.isValid = self.validConfig(self.config)
+        if isValid:
+            self.config = nextConfig
+            penalty = 0
+        else:  ## Invalid next state, do not change state variables
+            self.config = prevConfig
+            penalty = self.getPenalty(nextConfig)
+            self.numIllegalMoves += 1
+
         self.img = self.getIMG(self.config)
        
         self.TSCS, self.RMS = self.getMetric(self.config)

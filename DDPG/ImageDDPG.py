@@ -161,6 +161,7 @@ class DDPG():
 
             ## Log initial scattering at beginning of episode
             initial = env.RMS.item()
+            lowest = initial
             params.lowest = initial
             print('episode: ' + str(episode) + '\n')
             for t in tqdm(range(self.epLen), desc="train"):
@@ -174,10 +175,10 @@ class DDPG():
 
                 # Update current lowest scatter
                 current = env.RMS.item()
-                valid = env.isValid 
-                if current < self.lowest and valid == True:
+
+                if current < lowest:
                     lowest = current 
-                    params.lowest = np.append(params.lowest, self.lowest) 
+
 
                 ## Check if terminal
                 if t == self.epLen - 1:
@@ -204,18 +205,20 @@ class DDPG():
 
             ## Print episode statistics to console
             print('lowest: ' + str(lowest) + '\n')
-            print("isValid: " + str(valid) + "\n")
             print('episode_reward: ' + str(episode_reward) + '\n')
+            print('Invalid Move: ' + str(env.numIllegalMoves) + '\n')
             print('epsilon: ' + str(self.epsilon) + '\n')
 
             params.epsilon = np.append(params.epsilon, self.epsilon)
             params.reward = np.append(params.reward, episode_reward)
+            params.lowest = np.append(params.lowest, self.lowest)
             # Update result to wandb
             # utils.log_wandb(self.epsilon, lowest, episode_reward)
 
 
             ## Save models
-            if episode % self.saveModels == 0:
+            if episode % (self.saveModels - 1) == 0:
+                print("Saving Model")
                 actorCheckpoint = {'state_dict': self.actor.state_dict()}
                 targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
                 criticCheckpoint = {'state_dict': self.critic.state_dict()}
