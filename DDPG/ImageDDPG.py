@@ -213,7 +213,7 @@ class DDPG():
             params.reward = np.append(params.reward, episode_reward)
             params.lowest = np.append(params.lowest, self.lowest)
             # Update result to wandb
-            # utils.log_wandb(self.epsilon, lowest, episode_reward)
+            # utils.logWandb(self.epsilon, lowest, episode_reward)
 
 
             ## Save models
@@ -223,10 +223,10 @@ class DDPG():
                 targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
                 criticCheckpoint = {'state_dict': self.critic.state_dict()}
                 targetCriticCheckpoint = {'state_dict': self.targetCritic.state_dict()}
-                torch.save(actorCheckpoint, 'actor.pth.tar')
-                torch.save(targetActorCheckpoint, 'targetActor.pth.tar')
-                torch.save(criticCheckpoint, 'critic.pth.tar')
-                torch.save(targetCriticCheckpoint, 'targetCritic.pth.tar')
+                torch.save(actorCheckpoint, 'savedModels/ctor.pth.tar')
+                torch.save(targetActorCheckpoint, 'savedModels/argetActor.pth.tar')
+                torch.save(criticCheckpoint, 'savedModels/critic.pth.tar')
+                torch.save(targetCriticCheckpoint, 'savedModels/argetCritic.pth.tar')
 
             ## Reduce exploration
             self.decay_epsilon()
@@ -245,12 +245,12 @@ if __name__ == '__main__':
     agent.memory.alpha = params.MEM_ALPHA
     agent.memory.beta = params.MEM_BETA
 
-    # utils.init_wandb(params)
+    # utils.initWandb(params)
     '''
-    actorCheckpint = torch.load('actor.pth.tar')
-    criticCheckpoint = torch.load('critic.pth.tar')
-    targetActorCheckpoint = torch.load('targetActor.pth.tar')
-    targetCriticCheckpoint= torch.load('targerCritic.pth.tar') 
+    actorCheckpint = torch.load('savedModels/actor.pth.tar')
+    criticCheckpoint = torch.load('savedModels/critic.pth.tar')
+    targetActorCheckpoint = torch.load('savedModels/argetActor.pth.tar')
+    targetCriticCheckpoint= torch.load('savedModels/targerCritic.pth.tar') 
     agent.actor.load_state_dict(actorCheckpoint['state_dcit'])
     agent.critic.load_state_dict(criticCheckpoint['state_dict'])
     agent.targetActor.load_state_dict(targerActorCheckpoint['state_dict'])
@@ -263,8 +263,16 @@ if __name__ == '__main__':
     agent.learn(env, params)
 
     # plot and save data
-    utils.plot('reward2000', params.reward)
-    utils.plot('lowest2000', params.lowest)
-    utils.plot('epsilon2000', params.epsilon)
-
+    numIter = 2000
+    utils.plot('reward' + str(numIter), params.reward)
+    utils.plot('lowest' + str(numIter), params.lowest)
+    utils.plot('epsilon' + str(numIter), params.epsilon)
+    maxReward = max(params.reward)
+    minTSCS = min(params.lowest)
+    minEpsilon = min(params.epsilon)
+    result = {'maxReward' + str(numIter): maxReward,
+            'minTSCS' + str(numIter): minTSCS,
+            'minEpsilon' + str(numIter): minEpsilon
+            }
+    utils.saveData(result)
 

@@ -1,6 +1,7 @@
 import json
 import wandb
 import matplotlib.pyplot as plt
+import numpy as np
 
 class Params():
     """Class that loads hyperparameters from a json file.
@@ -32,7 +33,7 @@ class Params():
         return self.__dict__
 
 
-def init_wandb(params):
+def initWandb(params):
     wandb.init(project=params.PROJECT_NAME)
     wandb.config.nCyl = params.NCYL
     wandb.config.kmax = params.KMAX
@@ -57,16 +58,27 @@ def init_wandb(params):
     wandb.config.batch_size = params.BATCH_SIZE
 
 
-def log_wandb(epsilon, lowest, episode_reward):
+def logWandb(epsilon, lowest, episode_reward):
     wandb.log({
         'epsilon': epsilon,
         'lowest': lowest,
         'score': episode_reward})
 
-def plot(name, data):
+
+def plot(filename, data, dir='result/figures/'):
     plt.figure()
     plt.plot(data, 'r')
-    plt.title(name)
+    plt.title(filename)
     plt.xlabel('Epochs')
-    plt.ylabel(name)
-    plt.savefig('result/figures/' + name)
+    plt.ylabel(filename)
+    plt.savefig(dir + filename)
+
+
+def saveData(result, dir ='result/data/data.json'):
+    with open(dir) as jsonFile:
+        data = json.load(jsonFile)
+        temp = data
+        temp.update(result)
+
+    with open(dir, 'w') as f:
+        json.dump(temp, f, indent=2)
