@@ -29,6 +29,7 @@ class TSCSEnv():
         self.RMS = None
         self.img = None
         self.counter = None
+        self.isValid = None
 
         # Image transform
         self.img_dim = 50
@@ -139,7 +140,7 @@ class TSCSEnv():
         Computes reward based on change in scattering
         proporitional to how close it is to zero
         """
-        reward = 1 / RMS.item() - 10 * np.log(penalty+1)
+        reward = - RMS.item() - np.log(penalty+1)
 
         return reward
 
@@ -172,8 +173,9 @@ class TSCSEnv():
         penalty = self.getPenalty(nextConfig)
 
         self.config = nextConfig
+        self.isValid = self.validConfig(self.config)
         self.img = self.getIMG(self.config)
-
+       
         self.TSCS, self.RMS = self.getMetric(self.config)
         # self.TSCS = self.getTSCS(self.config)
         # self.RMS = self.getRMS(self.config)

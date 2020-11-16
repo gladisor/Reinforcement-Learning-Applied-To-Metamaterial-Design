@@ -43,7 +43,9 @@ class DDPG():
         ## Various hyperparameters
         self.gamma = params.GAMMA
         self.tau = params.TAU
+        self.lowest = 1e5
         self.epsilon = params.EPSILON
+        self.epsStart = self.epsilon
         self.epsDecay = params.EPS_DECAY
         self.epsEnd = params.EPS_END
 
@@ -58,7 +60,7 @@ class DDPG():
 
         self.numEpisodes = params.NUM_EPISODES
         self.epLen = params.EP_LEN
-        self.saveModels = 1000
+        self.saveModels = params.saveModels
 
     def select_action(self, img, state):
         with torch.no_grad():
@@ -123,7 +125,7 @@ class DDPG():
             return td.mean().item()
 
     def decay_epsilon(self):
-        self.epsilon *= self.epsDecay
+        self.epsilon -= (self.epsStart - self.epsEnd) / self.epsDecay
         self.epsilon = max(self.epsilon, self.epsEnd)
 
     def evaluate(self, env):
@@ -147,7 +149,7 @@ class DDPG():
             state = nextState
         return episode_reward, lowest
 
-    def learn(self, env):
+    def learn(self, env, params):
         ## Create file to store run data in using tensorboard
 
         for episode in range(self.numEpisodes):
@@ -159,8 +161,8 @@ class DDPG():
 
             ## Log initial scattering at beginning of episode
             initial = env.RMS.item()
-            lowest = initial
-
+            params.lowest = initial
+            print('episode: ' + str(episode) + '\n')
             for t in tqdm(range(self.epLen), desc="train"):
 
                 ## Select action and observe next state, reward
@@ -172,8 +174,10 @@ class DDPG():
 
                 # Update current lowest scatter
                 current = env.RMS.item()
-                if current < lowest:
-                    lowest = current
+                valid = env.isValid 
+                if current < self.lowest and valid == True:
+                    lowest = current 
+                    params.lowest = np.append(params.lowest, self.lowest) 
 
                 ## Check if terminal
                 if t == self.epLen - 1:
@@ -200,20 +204,26 @@ class DDPG():
 
             ## Print episode statistics to console
             print('lowest: ' + str(lowest) + '\n')
+            print("isValid: " + str(valid) + "\n")
             print('episode_reward: ' + str(episode_reward) + '\n')
             print('epsilon: ' + str(self.epsilon) + '\n')
 
             params.epsilon = np.append(params.epsilon, self.epsilon)
             params.reward = np.append(params.reward, episode_reward)
-            params.lowest = np.append(params.lowest, lowest)
             # Update result to wandb
             # utils.log_wandb(self.epsilon, lowest, episode_reward)
 
 
             ## Save models
             if episode % self.saveModels == 0:
-                torch.save(self.targetActor.state_dict(), 'actor.pt')
-                torch.save(self.targetCritic.state_dict(), 'critic.pt')
+                actorCheckpoint = {'state_dict': self.actor.state_dict()}
+                targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
+                criticCheckpoint = {'state_dict': self.critic.state_dict()}
+                targetCriticCheckpoint = {'state_dict': self.targetCritic.state_dict()}
+                torch.save(actorCheckpoint, 'actor.pth.tar')
+                torch.save(targetActorCheckpoint, 'targetActor.pth.tar')
+                torch.save(criticCheckpoint, 'critic.pth.tar')
+                torch.save(targetCriticCheckpoint, 'targetCritic.pth.tar')
 
             ## Reduce exploration
             self.decay_epsilon()
@@ -225,26 +235,33 @@ if __name__ == '__main__':
     params.N_ACTIONS = int(2 * params.NCYL)
     params.reward = np.array([])
     params.lowest = np.array([])
-    params.epsilon = np.array([])
-
+    params.epsilon = np.array([]) 
     agent = DDPG(params)
-
+     
     # Setting memory hyperparameters
     agent.memory.alpha = params.MEM_ALPHA
     agent.memory.beta = params.MEM_BETA
 
     # utils.init_wandb(params)
-
-
+    '''
+    actorCheckpint = torch.load('actor.pth.tar')
+    criticCheckpoint = torch.load('critic.pth.tar')
+    targetActorCheckpoint = torch.load('targetActor.pth.tar')
+    targetCriticCheckpoint= torch.load('targerCritic.pth.tar') 
+    agent.actor.load_state_dict(actorCheckpoint['state_dcit'])
+    agent.critic.load_state_dict(criticCheckpoint['state_dict'])
+    agent.targetActor.load_state_dict(targerActorCheckpoint['state_dict'])
+    agent.targetCritic.load_state_dict(targetCriticCheckpoint['state_dict'])
+    '''
     # Create env and agent
     env = TSCSEnv(params)
 
     # Run training session
-    agent.learn(env)
+    agent.learn(env, params)
 
     # plot and save data
-    utils.plot('reward', params.reward)
-    utils.plot('lowest', params.lowest)
-    utils.plot('epsilon', params.epsilon)
+    utils.plot('reward2000', params.reward)
+    utils.plot('lowest2000', params.lowest)
+    utils.plot('epsilon2000', params.epsilon)
 
 
