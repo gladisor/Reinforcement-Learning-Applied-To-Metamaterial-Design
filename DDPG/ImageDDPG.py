@@ -263,7 +263,7 @@ if __name__ == '__main__':
     agent.learn(env, params)
 
     # plot and save data
-    numIter = 2000
+    numIter = 500
     utils.plot('reward' + str(numIter), params.reward)
     utils.plot('lowest' + str(numIter), params.lowest)
     utils.plot('epsilon' + str(numIter), params.epsilon)
