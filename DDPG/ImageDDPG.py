@@ -223,10 +223,10 @@ class DDPG():
                 targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
                 criticCheckpoint = {'state_dict': self.critic.state_dict()}
                 targetCriticCheckpoint = {'state_dict': self.targetCritic.state_dict()}
-                torch.save(actorCheckpoint, 'savedModels/ctor.pth.tar')
-                torch.save(targetActorCheckpoint, 'savedModels/argetActor.pth.tar')
+                torch.save(actorCheckpoint, 'savedModels/actor.pth.tar')
+                torch.save(targetActorCheckpoint, 'savedModels/targetActor.pth.tar')
                 torch.save(criticCheckpoint, 'savedModels/critic.pth.tar')
-                torch.save(targetCriticCheckpoint, 'savedModels/argetCritic.pth.tar')
+                torch.save(targetCriticCheckpoint, 'savedModels/targetCritic.pth.tar')
 
             ## Reduce exploration
             self.decay_epsilon()
