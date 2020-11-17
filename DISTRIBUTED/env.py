@@ -1,14 +1,14 @@
 import gym
 from gym.spaces import Box
 import numpy as np
-import matlab
 import matlab.engine
+import ray
 
-class DistributedTSCSEnv(gym.Env):
+class TSCSEnv(gym.Env):
 	def __init__(self, config):
 		## Initialize matlab
 		self.eng = matlab.engine.start_matlab()
-		self.eng.addpath('../DDPG/TSCS')
+		self.eng.addpath('TSCS')
 
 		## Env hyperparameters
 		self.nCyl = config['nCyl']
@@ -25,15 +25,16 @@ class DistributedTSCSEnv(gym.Env):
 		self.TSCS = None
 		self.RMS = None
 		self.timestep = None
-		self.lowest = None
-		self.numIllegalMoves = None
+		self.info = {
+			'lowest': None,
+			'numIllegalMoves': None}
 
 		## Observation and action space
 		self.observation_space = Box(
 			low=-100.,
 			high=100.,
 			## Number of cylinders + number of wavenumbers + 2 additional variables (rms, timestep)
-			shape=((1, self.nCyl * 2 + self.nFreq + 2)))
+			shape=(1, self.nCyl * 2 + self.nFreq + 2))
 
 		self.action_space = Box(
 			low=-self.actionRange,
@@ -76,7 +77,6 @@ class DistributedTSCSEnv(gym.Env):
 		This calculates total cross secitonal scattering across nFreq wavenumbers
 		from k0amax to k0amin. Also calculates RMS of these wavenumbers.
 		"""
-		# x = self.eng.transpose(matlab.double(*self.config.reshape(self.nCyl * 2)))
 		x = self.eng.transpose(matlab.double(*config.tolist()))
 		tscs = self.eng.getMetric(x, self.M, self.k0amax, self.k0amin, self.F)
 		tscs = np.array(tscs).T
@@ -87,11 +87,13 @@ class DistributedTSCSEnv(gym.Env):
 		"""
 		Generates starting config and calculates its tscs
 		"""
-		self.numIllegalMoves = 0
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.timestep = np.array([[0.0]])
-		self.lowest = self.RMS.item()
+
+		self.info['lowest'] = self.RMS.item()
+		self.info['numIllegalMoves'] = 0
+
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
 		return state
 
@@ -118,26 +120,36 @@ class DistributedTSCSEnv(gym.Env):
 			self.config = nextConfig
 			valid = True
 		else:
-			self.numIllegalMoves += 1
+			self.info['numIllegalMoves'] += 1
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		reward = self.getReward(self.RMS, valid)
 		self.timestep += 1/self.episodeLength
 
-		if self.RMS < self.lowest:
-			self.lowest = self.RMS.item()
+		if self.RMS < self.info['lowest']:
+			self.info['lowest'] = self.RMS.item()
 
 		done = False
 		if int(self.timestep) == 1:
 			done = True
 
-		info = {
-			'meanTSCS':self.TSCS.mean(),
-			'rms':self.RMS,
-			'lowest':self.lowest,
-			'numIllegalMoves': self.numIllegalMoves}
-
 		state = np.concatenate((self.config, self.TSCS, self.RMS, self.timestep), axis=-1)
+		return state, reward, done, self.info
+
+class DistributedTSCSEnv():
+	def __init__(self, config, workers=1):
+		ray.init()
+		self.env_class = ray.remote(TSCSEnv)
+		self.envs = [self.env_class.remote(config) for _ in range(workers)]
+
+	def reset(self):
+		state = [e.reset.remote() for e in self.envs]
+		state = ray.get(state)
+		return np.concatenate(state, axis=0)
+
+	def step(self, action):
+		data = [e.step.remote(action[i].numpy()) for i, e in enumerate(self.envs)]
+		state, reward, done, info = zip(*ray.get(data))
 		return state, reward, done, info
 
 if __name__ == '__main__':
@@ -151,14 +163,29 @@ if __name__ == '__main__':
 		'actionRange':0.2,
 		'episodeLength':100}
 
-	env = DistributedTSCSEnv(config)
+	# env = TSCSEnv(config)
 
-	start = time.time()
+	# start = time.time()
+
+	# state = env.reset()
+	# done = False
+	# while not done:
+	# 	action = env.action_space.sample()
+	# 	state, reward, done, info = env.step(action)
+
+	# print(f'Episode took: {time.time() - start} seconds')
+
+	env = DistributedTSCSEnv(config, 5)
 
 	state = env.reset()
-	done = False
-	while not done:
-		action = env.action_space.sample()
-		state, reward, done, info = env.step(action)
 
-	print(f'Episode took: {time.time() - start} seconds')
+	from models import Actor
+	import torch
+
+	actor = Actor(21, 8, [128, 128], config['actionRange'])
+
+	with torch.no_grad():
+		action = actor(torch.tensor(state).float())
+
+	data = env.step(action)
+	print(data)

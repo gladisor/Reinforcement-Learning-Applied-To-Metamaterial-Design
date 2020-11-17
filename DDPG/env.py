@@ -109,10 +109,6 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		# if isValid:
-		# 	reward = 0.2**(RMS.item()-1)-1
-		# else:
-		# 	reward = -1
 		reward = -RMS.item()
 		if not isValid:
 			reward += -1.0
@@ -126,6 +122,8 @@ class TSCSEnv():
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
+		if list(self.TSCS.shape) == []:
+			self.TSCS = self.TSCS.view(1, 1)
 		state = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float() 
 		return state
 
@@ -155,5 +153,9 @@ class TSCSEnv():
 		time = self.getTime()
 
 		reward = self.getReward(self.RMS, isValid)
+
+		if list(self.TSCS.shape) == []:
+			self.TSCS = self.TSCS.view(1, 1)
+			
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, time], dim=-1).float()
 		return nextState, reward

@@ -15,7 +15,7 @@ class DDPG():
 	def __init__(self,
 		inSize, actorNHidden, actorHSize, criticNHidden, criticHSize, 
 		nActions, actionRange, actorLR, criticLR, criticWD,
-		gamma, tau, epsilon, epsDecay, epsEnd,
+		gamma, tau, epsilon, decay_timesteps, epsEnd,
 		memSize, batchSize, numEpisodes, epLen):
 
 		super(DDPG, self).__init__()
@@ -44,7 +44,7 @@ class DDPG():
 		self.tau = tau
 		self.epsStart = epsilon
 		self.epsilon = epsilon
-		self.epsDecay = epsDecay
+		self.decay_timesteps = decay_timesteps
 		self.epsEnd = epsEnd
 
 		## Transition tuple to store experience
@@ -122,29 +122,8 @@ class DDPG():
 
 	def decay_epsilon(self):
 		# self.epsilon *= self.epsDecay
-		self.epsilon -= (self.epsStart - self.epsEnd) / 10_000
+		self.epsilon -= (self.epsStart - self.epsEnd) / self.decay_timesteps
 		self.epsilon = max(self.epsilon, self.epsEnd)
-
-	def evaluate(self, env):
-		state = env.reset()
-		episode_reward = 0
-
-		initial = env.RMS.item()
-		lowest = initial
-
-		for t in tqdm(range(self.epLen), desc="eval"):
-			with torch.no_grad():
-				action = self.targetActor(state.cuda()).cpu()
-
-			nextState, reward = env.step(action)
-			episode_reward += reward
-
-			current = env.RMS.item()
-			if current < lowest:
-				lowest = current
-
-			state = nextState
-		return episode_reward, lowest
 
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
@@ -196,12 +175,11 @@ class DDPG():
 			## Print episode statistics to console
 			print(
 				f'\n#:{episode}, ' \
-				f'I:{round(initial, 2)}, ' \
-				f'Lowest:{round(lowest, 2)}, ' \
-				f'F:{round(current, 2)}, '\
-				f'Score:{round(episode_reward, 2)}, ' \
-				f'td:{round(td, 2)}, ' \
-				f'Epsilon: {round(self.epsilon, 2)}\n')
+				f'I:{initial}, ' \
+				f'Lowest:{lowest}, ' \
+				f'F:{current}, '\
+				f'Score:{episode_reward}, ' \
+				f'Epsilon: {self.epsilon}\n')
 
 			wandb.log({
 				'epsilon':self.epsilon, 
@@ -218,10 +196,10 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 8
-	KMAX = 0.45
-	KMIN = 0.35
-	NFREQ = 11
+	NCYL = 2
+	KMAX = .45
+	KMIN = .44
+	NFREQ = 2
 
 	# ddpg params
 	IN_SIZE 		= 2 * NCYL + NFREQ + 2
@@ -230,16 +208,16 @@ if __name__ == '__main__':
 	CRITIC_N_HIDDEN = 8
 	CRITIC_H_SIZE 	= 128
 	N_ACTIONS 		= 2 * NCYL
-	ACTION_RANGE 	= 0.2
+	ACTION_RANGE 	= 0.5
 	ACTOR_LR 		= 1e-4
 	CRITIC_LR 		= 1e-3
 	CRITIC_WD 		= 1e-2 		## How agressively to reduce overfitting
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
-	EPSILON 		= 1.20		## Scale of random noise
-	EPS_DECAY 		= 0.9998	## How slowly to reduce epsilon
+	EPSILON 		= 1.2		## Scale of random noise
+	DECAY_TIMESTEPS = 1_000		## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
-	MEM_SIZE 		= 1_000_000 ## How many samples in priority queue
+	MEM_SIZE 		= 1_000_000	## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
 	MEM_BETA 		= 0.5 		## No clue ????
 	BATCH_SIZE 		= 64
@@ -260,7 +238,7 @@ if __name__ == '__main__':
 		GAMMA, 
 		TAU, 
 		EPSILON, 
-		EPS_DECAY, 
+		DECAY_TIMESTEPS, 
 		EPS_END, 
 		MEM_SIZE, 
 		BATCH_SIZE, 
@@ -287,7 +265,7 @@ if __name__ == '__main__':
 	wandb.config.gamma = GAMMA
 	wandb.config.tau = TAU
 	wandb.config.epsilon = EPSILON
-	wandb.config.eps_decay = EPS_DECAY
+	wandb.config.decay_timesteps = DECAY_TIMESTEPS
 	wandb.config.eps_end = EPS_END
 	wandb.config.mem_size = MEM_SIZE
 	wandb.config.alpha = MEM_ALPHA
