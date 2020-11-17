@@ -45,7 +45,7 @@ class DDPG():
         self.tau = params.TAU
         self.lowest = 1e5
         self.epsilon = params.EPSILON
-        self.epsStart = self.epsilon
+        self.epsStart = params.EPSILON
         self.epsDecay = params.EPS_DECAY
         self.epsEnd = params.EPS_END
 
