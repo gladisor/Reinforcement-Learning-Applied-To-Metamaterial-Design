@@ -1,0 +1,18 @@
+{
+    "os": "Linux-5.4.0-53-generic-x86_64-with-glibc2.10",
+    "python": "3.8.5",
+    "heartbeatAt": "2020-11-15T22:45:54.095980",
+    "startedAt": "2020-11-15T22:45:53.136585",
+    "docker": null,
+    "gpu": "GeForce GTX 1060 6GB",
+    "gpu_count": 1,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "main.py",
+    "program": "main.py",
+    "host": "tristan-AB350-Gaming-3",
+    "username": "tristan",
+    "executable": "/home/tristan/anaconda3/envs/TSCSProject/bin/python"
+}

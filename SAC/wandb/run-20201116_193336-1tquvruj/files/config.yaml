@@ -1,0 +1,68 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.5
+actor_fc:
+  desc: null
+  value:
+  - 19
+  - 256
+  - 256
+actor_lr:
+  desc: null
+  value: 0.0003
+alpha:
+  desc: null
+  value: 0.2
+alpha_lr:
+  desc: null
+  value: 0.0003
+batch_size:
+  desc: null
+  value: 256
+critic_fc:
+  desc: null
+  value:
+  - 27
+  - 27
+  - 256
+  - 256
+critic_lr:
+  desc: null
+  value: 0.0003
+env:
+  desc: null
+  value: env.TSCSEnv
+env_params:
+  desc: null
+  value:
+    actionRange: 0.5
+    episodeLength: 100
+    k0amax: 0.45
+    k0amin: 0.35
+    nCyl: 4
+    nFreq: 11
+gamma:
+  desc: null
+  value: 0.9
+mem_size:
+  desc: null
+  value: 1000000
+num_random_episodes:
+  desc: null
+  value: 100
+run_name:
+  desc: null
+  value: firstRun
+save_every:
+  desc: null
+  value: 100
+tau:
+  desc: null
+  value: 0.005
