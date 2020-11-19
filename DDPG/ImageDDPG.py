@@ -43,7 +43,6 @@ class DDPG():
         ## Various hyperparameters
         self.gamma = params.GAMMA
         self.tau = params.TAU
-        self.lowest = 1e5
         self.epsilon = params.EPSILON
         self.epsStart = params.EPSILON
         self.epsDecay = params.EPS_DECAY
@@ -211,7 +210,7 @@ class DDPG():
 
             params.epsilon = np.append(params.epsilon, self.epsilon)
             params.reward = np.append(params.reward, episode_reward)
-            params.lowest = np.append(params.lowest, self.lowest)
+            params.lowest = np.append(params.lowest, lowest)
             # Update result to wandb
             # utils.logWandb(self.epsilon, lowest, episode_reward)
 
@@ -246,16 +245,15 @@ if __name__ == '__main__':
     agent.memory.beta = params.MEM_BETA
 
     # utils.initWandb(params)
-    '''
-    actorCheckpint = torch.load('savedModels/actor.pth.tar')
+    actorCheckpoint = torch.load('savedModels/actor.pth.tar')
     criticCheckpoint = torch.load('savedModels/critic.pth.tar')
-    targetActorCheckpoint = torch.load('savedModels/argetActor.pth.tar')
-    targetCriticCheckpoint= torch.load('savedModels/targerCritic.pth.tar') 
-    agent.actor.load_state_dict(actorCheckpoint['state_dcit'])
+    targetActorCheckpoint = torch.load('savedModels/targetActor.pth.tar')
+    targetCriticCheckpoint= torch.load('savedModels/targetCritic.pth.tar') 
+    agent.actor.load_state_dict(actorCheckpoint['state_dict'])
     agent.critic.load_state_dict(criticCheckpoint['state_dict'])
-    agent.targetActor.load_state_dict(targerActorCheckpoint['state_dict'])
+    agent.targetActor.load_state_dict(targetActorCheckpoint['state_dict'])
     agent.targetCritic.load_state_dict(targetCriticCheckpoint['state_dict'])
-    '''
+    
     # Create env and agent
     env = TSCSEnv(params)
 
@@ -263,7 +261,7 @@ if __name__ == '__main__':
     agent.learn(env, params)
 
     # plot and save data
-    numIter = 500
+    numIter = 300
     utils.plot('reward' + str(numIter), params.reward)
     utils.plot('lowest' + str(numIter), params.lowest)
     utils.plot('epsilon' + str(numIter), params.epsilon)
