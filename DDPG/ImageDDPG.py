@@ -161,7 +161,7 @@ class DDPG():
             ## Log initial scattering at beginning of episode
             initial = env.RMS.item()
             lowest = initial
-            params.lowest = initial
+
             print('episode: ' + str(episode) + '\n')
             for t in tqdm(range(self.epLen), desc="train"):
 
@@ -218,13 +218,9 @@ class DDPG():
             ## Save models
             if episode % (self.saveModels - 1) == 0:
                 print("Saving Model")
-                actorCheckpoint = {'state_dict': self.actor.state_dict()}
                 targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
-                criticCheckpoint = {'state_dict': self.critic.state_dict()}
                 targetCriticCheckpoint = {'state_dict': self.targetCritic.state_dict()}
-                torch.save(actorCheckpoint, 'savedModels/actor.pth.tar')
                 torch.save(targetActorCheckpoint, 'savedModels/targetActor.pth.tar')
-                torch.save(criticCheckpoint, 'savedModels/critic.pth.tar')
                 torch.save(targetCriticCheckpoint, 'savedModels/targetCritic.pth.tar')
 
             ## Reduce exploration
@@ -245,15 +241,12 @@ if __name__ == '__main__':
     agent.memory.beta = params.MEM_BETA
 
     # utils.initWandb(params)
-    actorCheckpoint = torch.load('savedModels/actor.pth.tar')
-    criticCheckpoint = torch.load('savedModels/critic.pth.tar')
+    '''
     targetActorCheckpoint = torch.load('savedModels/targetActor.pth.tar')
     targetCriticCheckpoint= torch.load('savedModels/targetCritic.pth.tar') 
-    agent.actor.load_state_dict(actorCheckpoint['state_dict'])
-    agent.critic.load_state_dict(criticCheckpoint['state_dict'])
     agent.targetActor.load_state_dict(targetActorCheckpoint['state_dict'])
     agent.targetCritic.load_state_dict(targetCriticCheckpoint['state_dict'])
-    
+    '''
     # Create env and agent
     env = TSCSEnv(params)
 
@@ -261,7 +254,7 @@ if __name__ == '__main__':
     agent.learn(env, params)
 
     # plot and save data
-    numIter = 300
+    numIter = 2000
     utils.plot('reward' + str(numIter), params.reward)
     utils.plot('lowest' + str(numIter), params.lowest)
     utils.plot('epsilon' + str(numIter), params.epsilon)

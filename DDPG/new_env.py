@@ -39,22 +39,6 @@ class TSCSEnv():
             transforms.Grayscale(),
             transforms.ToTensor()])
 
-    def getPenalty(self, config):
-        penalty = 0.0
-        coords = config.view(self.nCyl, 2)
-        for i in range(self.nCyl):
-            for j in range(self.nCyl):
-                if i != j:
-                    x1, y1 = coords[i]
-                    x2, y2 = coords[j]
-                    d = torch.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-                    if d <= 2.1:
-                        penalty += d
-                    d_out = torch.sqrt(x1 ** 2 + y1 ** 2) - 5
-                    if d_out > 0:
-                        penalty += d_out
-        return float(penalty)
-
     def validConfig(self, config):
         """
         Checks if config is within bounds and does not overlap cylinders
@@ -136,12 +120,14 @@ class TSCSEnv():
     def getTime(self):
         return self.counter / 100
 
-    def getReward(self, RMS, penalty):
+    def getReward(self, RMS, isValid):
         """
         Computes reward based on change in scattering
         proporitional to how close it is to zero
         """
-        reward = - RMS.item() - np.log(penalty+1)
+        reward = - RMS.item()
+        if not isValid:
+           reward += -1
 
         return reward
 
@@ -176,10 +162,8 @@ class TSCSEnv():
 
         if isValid:
             self.config = nextConfig
-            penalty = 0
         else:  ## Invalid next state, do not change state variables
             self.config = prevConfig
-            penalty = self.getPenalty(nextConfig)
             self.numIllegalMoves += 1
 
         self.img = self.getIMG(self.config)
@@ -190,7 +174,7 @@ class TSCSEnv():
         self.counter += 1
         time = self.getTime()
 
-        reward = self.getReward(self.RMS, penalty)
+        reward = self.getReward(self.RMS, isValid)
         nextState = torch.cat([self.config.double(), self.TSCS.double(), self.RMS.double(), time.double()],
                               dim=-1).float()
         return nextState, reward
