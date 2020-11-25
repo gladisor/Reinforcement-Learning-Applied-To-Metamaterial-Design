@@ -135,6 +135,7 @@ class TSCSEnv():
         """
         Generates starting config and calculates its tscs
         """
+        self.numIllegalMoves = 0
         self.config = self.getConfig()
         self.TSCS, self.RMS = self.getMetric(self.config)
         self.img = self.getIMG(self.config)

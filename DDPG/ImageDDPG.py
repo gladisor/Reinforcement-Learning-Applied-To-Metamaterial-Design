@@ -28,17 +28,16 @@ class DDPG():
         self.critic = ImageCritic(params.IN_SIZE, params.CRITIC_N_HIDDEN, params.CRITIC_H_SIZE, params.N_ACTIONS)
         self.targetCritic = ImageCritic(params.IN_SIZE, params.CRITIC_N_HIDDEN, params.CRITIC_H_SIZE, params.N_ACTIONS)
 
-        if torch.cuda.is_available():
-            self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
-            self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
+        self.actor, self.targetActor = self.actor.cuda(), self.targetActor.cuda()
+        self.critic, self.targetCritic = self.critic.cuda(), self.targetCritic.cuda()
 
         ## Define the optimizers for both networks
         self.actorOpt = Adam(self.actor.parameters(), lr=params.ACTOR_LR)
         self.criticOpt = Adam(self.critic.parameters(), lr=params.CRITIC_LR, weight_decay=params.CRITIC_WD)
 
         ## Hard update
-        self.targetActor.load_state_dict(self.actor.state_dict())
-        self.targetCritic.load_state_dict(self.critic.state_dict())
+        #self.targetActor.load_state_dict(self.actor.state_dict())
+        #self.targetCritic.load_state_dict(self.critic.state_dict())
 
         ## Various hyperparameters
         self.gamma = params.GAMMA
@@ -254,7 +253,7 @@ if __name__ == '__main__':
     agent.learn(env, params)
 
     # plot and save data
-    numIter = 2000
+    numIter = 10000
     utils.plot('reward' + str(numIter), params.reward)
     utils.plot('lowest' + str(numIter), params.lowest)
     utils.plot('epsilon' + str(numIter), params.epsilon)
