@@ -23,8 +23,8 @@
     "MEM_BETA": 0.5,
     "Ep_per500": 0.0365,
     "BATCH_SIZE": 64,
-    "NUM_EPISODES": 10,
+    "NUM_EPISODES": 5000,
     "EP_LEN": 100,
     "PROJECT_NAME": "TSCS",
-    "saveModels": 100
+    "saveModels": 500
  }

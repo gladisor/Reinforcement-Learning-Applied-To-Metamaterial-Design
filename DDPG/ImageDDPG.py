@@ -213,14 +213,26 @@ class DDPG():
             # Update result to wandb
             # utils.logWandb(self.epsilon, lowest, episode_reward)
 
-
             ## Save models
-            if episode % (self.saveModels - 1) == 0:
+            numIter = episode + 1
+            if (numIter % self.saveModels == 0) or (numIter == self.numEpisodes):
                 print("Saving Model")
                 targetActorCheckpoint = {'state_dict': self.targetActor.state_dict()}
                 targetCriticCheckpoint = {'state_dict': self.targetCritic.state_dict()}
                 torch.save(targetActorCheckpoint, 'savedModels/targetActor.pth.tar')
                 torch.save(targetCriticCheckpoint, 'savedModels/targetCritic.pth.tar')
+
+                utils.plot('reward' + str(numIter), params.reward)
+                utils.plot('lowest' + str(numIter), params.lowest)
+                utils.plot('epsilon' + str(numIter), params.epsilon)
+                maxReward = max(params.reward)
+                minTSCS = min(params.lowest)
+                minEpsilon = min(params.epsilon)
+                result = {'maxReward' + str(numIter): maxReward,
+                          'minTSCS' + str(numIter): minTSCS,
+                          'minEpsilon' + str(numIter): minEpsilon
+                          }
+                utils.saveData(result)
 
             ## Reduce exploration
             self.decay_epsilon()
@@ -252,17 +264,5 @@ if __name__ == '__main__':
     # Run training session
     agent.learn(env, params)
 
-    # plot and save data
-    numIter = 10000
-    utils.plot('reward' + str(numIter), params.reward)
-    utils.plot('lowest' + str(numIter), params.lowest)
-    utils.plot('epsilon' + str(numIter), params.epsilon)
-    maxReward = max(params.reward)
-    minTSCS = min(params.lowest)
-    minEpsilon = min(params.epsilon)
-    result = {'maxReward' + str(numIter): maxReward,
-            'minTSCS' + str(numIter): minTSCS,
-            'minEpsilon' + str(numIter): minEpsilon
-            }
-    utils.saveData(result)
+
 
