@@ -9,7 +9,7 @@ import io
 ## 4 Cylinder TSCS
 class TSCSEnv():
 	"""docstring for TSCSEnv"""
-	def __init__(self, nCyl=4, stepSize=0.5):
+	def __init__(self, nCyl=4, k0amax=0.5, k0amin=0.3, nfreq=11, stepSize=0.5):
 		## Matlab interface
 		self.eng = matlab.engine.start_matlab()
 		self.eng.addpath('TSCS')
@@ -17,6 +17,11 @@ class TSCSEnv():
 		## Hyperparameters
 		self.nCyl = nCyl
 		self.stepSize = stepSize
+		self.F = nfreq
+		self.M = matlab.double([nCyl])
+		self.k0amax = matlab.double([k0amax])
+		self.k0amin = matlab.double([k0amin])
+		self.nfreq = matlab.double([nfreq])
 
 		## State variables
 		self.config = None
@@ -58,20 +63,17 @@ class TSCSEnv():
 		and not overlaping cylinders
 		"""
 		while True:
-			config = torch.FloatTensor(1, 8).uniform_(-5, 5)
+			config = torch.FloatTensor(1, 2 * self.nCyl).uniform_(-5, 5)
 			if self.validConfig(config):
 				break
 		return config
 
-	def getTSCS(self, config):
-		## Gets tscs of configuration from matlab
-		tscs = self.eng.getTSCS4CYL(*config.squeeze(0).tolist())
-		return torch.tensor(tscs).T
-
-	def getRMS(self, config):
-		## Gets rms of configuration from matlab
-		rms = self.eng.getRMS4CYL(*config.squeeze(0).tolist())
-		return torch.tensor([[rms]])
+	def getMetric(self, config):
+		x = self.eng.transpose(matlab.double(*config.tolist()))
+		tscs = self.eng.getMetric(x, self.M, self.k0amax, self.k0amin, self.nfreq)
+		tscs = torch.tensor(tscs).T
+		rms = tscs.pow(2).mean().sqrt().view(1,1)
+		return tscs, rms
 
 	def getIMG(self, config):
 		"""
@@ -109,24 +111,21 @@ class TSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		if isValid:
-			reward = 0.2**(RMS.item()-1)-1
-		else:
-			reward = -1
-			
-		done = False
-		return reward, done
+		reward = -RMS.item()
+		if not isValid:
+			reward += -1.0
+		return reward
 
 	def reset(self):
 		"""
 		Generates starting config and calculates its tscs
 		"""
 		self.config = self.getConfig()
-		self.TSCS = self.getTSCS(self.config)
-		self.RMS = self.getRMS(self.config)
-		# self.img = self.getIMG(self.config)
+		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
 		time = self.getTime()
+		if list(self.TSCS.shape) == []:
+			self.TSCS = self.TSCS.view(1, 1)
 
 		state = (
 			self.config, 
@@ -169,13 +168,11 @@ class TSCSEnv():
 		else: ## Invalid next state, do not change state variables
 			self.config = prevConfig
 
-		self.TSCS = self.getTSCS(self.config)
-		self.RMS = self.getRMS(self.config)
-		# self.img = self.getIMG(self.config)
+		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter += 1
 		time = self.getTime()
 
-		reward, done = self.getReward(self.RMS, isValid)
+		reward = self.getReward(self.RMS, isValid)
 
 		nextState = (
 			self.config,
@@ -183,6 +180,10 @@ class TSCSEnv():
 			self.RMS,
 			# self.img,
 			time)
+
+		done = False
+		if int(time) == 1:
+			done = True
 		return nextState, reward, done
 
 if __name__ == '__main__':

@@ -14,7 +14,7 @@ from models import DQN
 
 class Agent():
 	def __init__(self, 
-			gamma, eps, eps_end, eps_decay, 
+			gamma, eps, eps_end, eps_decay_steps, 
 			memory_size, batch_size, lr):
 
 		## Networks -- Change this to custom nets
@@ -27,8 +27,9 @@ class Agent():
 		## Hyperperameters
 		self.gamma = gamma
 		self.eps = eps
+		self.eps_start = eps
 		self.eps_end = eps_end
-		self.eps_decay = eps_decay
+		self.eps_decay_steps = eps_decay_steps
 		self.memory = NaivePrioritizedBuffer(memory_size)
 		self.batch_size = batch_size
 		self.Transition = None
@@ -39,7 +40,7 @@ class Agent():
 		if random.random() > self.eps:
 			## Exploit
 			with torch.no_grad():
-				action = torch.argmax(self.Qt(state), dim=-1).item()
+				action = torch.argmax(self.Qp(state), dim=-1).item()
 		else:
 			## Explore
 			action = np.random.randint(self.nActions)
@@ -115,5 +116,5 @@ class Agent():
 			return loss.item()
 
 	def decay_epsilon(self):
-		self.eps *= self.eps_decay
+		self.eps -= (self.eps_start - self.eps_end) / self.eps_decay_steps
 		self.eps = max(self.eps, self.eps_end)

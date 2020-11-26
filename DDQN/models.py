@@ -18,14 +18,14 @@ class DQN(nn.Module):
 		return q
 
 class CylinderNet(nn.Module):
-	def __init__(self, h_size, n_hidden):
+	def __init__(self, inSize, h_size, n_hidden, nActions):
 		super(CylinderNet, self).__init__()
-		self.fc = nn.Linear(21, h_size)
+		self.fc = nn.Linear(inSize, h_size)
 		self.hidden = nn.ModuleList()
 		for _ in range(n_hidden):
 			self.hidden.append(nn.Linear(h_size, h_size))
 		self.v = nn.Linear(h_size, 1)
-		self.adv = nn.Linear(h_size, 16)
+		self.adv = nn.Linear(h_size, nActions)
 
 	def forward(self, s):
 		x = torch.cat([*s], dim=-1)

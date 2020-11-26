@@ -13,39 +13,59 @@ if __name__ == '__main__':
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY = 0.9998
+	EPS_DECAY_STEPS = 2500
 	TARGET_UPDATE = 10
-	MEMORY_SIZE = 100_000
+	MEMORY_SIZE = 1_000_000
 	BATCH_SIZE = 64
 	LR = 0.0005
 	MOMENTUM = 0.9
-	NUM_EPISODES = 30_000
+	NUM_EPISODES = 3000
 	EPISODE_LEN = 100
 	H_SIZE = 128
 	N_HIDDEN = 1
+
+	nCyl=3
+	k0amax=0.45
+	k0amin=0.35
+	nfreq=11
 	STEP_SIZE = 0.5
+
+	## Creating environment object
+	env = TSCSEnv(
+		nCyl=nCyl, 
+		k0amax=k0amax, 
+		k0amin=k0amin, 
+		nfreq=nfreq, 
+		stepSize=STEP_SIZE)
 
 	wandb.init(project='tscs-ddqn')
 
 	## Creating agent object with parameters
 	agent = Agent(
-		GAMMA, EPS, EPS_END, EPS_DECAY, 
+		GAMMA, EPS, EPS_END, EPS_DECAY_STEPS, 
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
 	# Defining models
-	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN).cuda()
-	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN).cuda()
+	agent.Qp = CylinderNet(
+		env.nCyl * 2 + env.F + 2,
+		H_SIZE, 
+		N_HIDDEN,
+		env.nCyl * 4).cuda()
+
+	agent.Qt = CylinderNet(
+		env.nCyl * 2 + env.F + 2,
+		H_SIZE,
+		N_HIDDEN,
+		env.nCyl * 4).cuda()
+
 	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
 		lr=LR,
 		momentum=MOMENTUM)
-	# agent.opt = torch.optim.Adam(
-	# 	agent.Qp.parameters(),
-	# 	lr=LR)
 	
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
-	agent.nActions = 16
+	agent.nActions = nCyl * 2
 
 	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
@@ -53,8 +73,6 @@ if __name__ == '__main__':
 		'a','r',
 		'c_','tscs_','rms_','time_','done'))
 
-	## Creating environment object
-	env = TSCSEnv(stepSize=STEP_SIZE)
 
 	step = 0
 
@@ -104,17 +122,17 @@ if __name__ == '__main__':
 		agent.decay_epsilon()
 		print(
 			f'#:{episode}, '\
-			f'I:{round(initial, 2)}, '\
-			f'Lowest:{round(lowest, 2)}, '\
-			f'F:{round(current, 2)}, '\
-			f'Score:{round(episode_reward, 2)}, '\
-			f'Eps:{round(agent.eps, 2)}')
+			f'I:{initial}, '\
+			f'L:{lowest}, '\
+			f'F:{current}, '\
+			f'Score:{episode_reward}, '\
+			f'Eps:{agent.eps}')
 
 		wandb.log({
 			'lowest':lowest,
-			'score':episode_reward
-			})
+			'reward':episode_reward,
+			'epsilon':agent.eps})
 
 		## Save models
-		if episode % 1000 == 0:
-			torch.save(agent.Qt.state_dict(), f'ddqn{episode}.pt')
+		if episode % 100 == 0:
+			torch.save(agent.Qp.state_dict(), f'ddqn.pt')
