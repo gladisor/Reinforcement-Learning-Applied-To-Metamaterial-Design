@@ -1,0 +1,24 @@
+{
+    "os": "Linux-5.4.0-54-generic-x86_64-with-glibc2.10",
+    "python": "3.8.5",
+    "heartbeatAt": "2020-11-18T22:05:31.130472",
+    "startedAt": "2020-11-18T22:05:30.298173",
+    "docker": null,
+    "gpu": "GeForce GTX 1060 6GB",
+    "gpu_count": 1,
+    "cpu_count": 12,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "codePath": "NEW_DDQN/main.py",
+    "program": "main.py",
+    "git": {
+        "remote": "https://github.com/gladisor/TSCSProject.git",
+        "commit": "d9100175f982799c1fa6a601860ae7f6431cd05b"
+    },
+    "email": "123.tristan.shah@gmail.com",
+    "root": "/home/tristan/Desktop/TSCSProject",
+    "host": "tristan-AB350-Gaming-3",
+    "username": "tristan",
+    "executable": "/home/tristan/anaconda3/envs/TSCSProject/bin/python"
+}

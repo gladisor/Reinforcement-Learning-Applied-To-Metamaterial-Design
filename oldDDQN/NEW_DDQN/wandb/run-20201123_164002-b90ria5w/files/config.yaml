@@ -1,0 +1,49 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.8
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.5
+batchSize:
+  desc: null
+  value: 64
+epsDecaySteps:
+  desc: null
+  value: 3000
+epsEnd:
+  desc: null
+  value: 0.1
+gamma:
+  desc: null
+  value: 0.9
+hSize:
+  desc: null
+  value: 128
+inSize:
+  desc: null
+  value: 21
+lr:
+  desc: null
+  value: 0.0005
+memorySize:
+  desc: null
+  value: 1000000
+nActions:
+  desc: null
+  value: 16
+nHidden:
+  desc: null
+  value: 1
+name:
+  desc: null
+  value: 4cyl0.45-0.35WithChanges
+num_random_episodes:
+  desc: null
+  value: 0
+tau:
+  desc: null
+  value: 0.005

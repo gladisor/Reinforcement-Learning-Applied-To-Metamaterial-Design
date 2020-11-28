@@ -20,8 +20,10 @@ class DDPG():
 
 		super(DDPG, self).__init__()
 		## Actions
+		self.observation_size = inSize
 		self.nActions = nActions
 		self.actionRange = actionRange
+		self.noise = OrnsteinUhlenbeckActionNoise(np.zeros(self.nActions), 1)
 
 		## Networks
 		self.actor = Actor(inSize, actorNHidden, actorHSize, nActions, actionRange)
@@ -58,18 +60,29 @@ class DDPG():
 
 		self.numEpisodes = numEpisodes
 		self.epLen = epLen
-		self.saveModels = 1000
+		self.saveEvery = 1000
+		self.randomEpisodes = 1000
+		self.learningBegins = 500
 
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, self.epsilon, self.nActions)
-			action = self.targetActor(state.cuda()).cpu() + noise
+			noise = np.random.normal(0, 1, self.nActions) * self.epsilon
+			action = self.actor(state.cuda()).cpu() + noise
 			action.clamp_(-self.actionRange, self.actionRange)
+		return action
+
+	def random_uniform_action(self):
+		action = np.random.uniform(
+			-self.actionRange, 
+			self.actionRange, 
+			size=(1, self.nActions))
+
+		action = torch.tensor(action)
 		return action
 
 	def select_action_ou(self, state):
 		with torch.no_grad():
-			action = self.targetActor(state.cuda()).cpu() + self.noise()
+			action = self.actor(state.cuda()).cpu() + self.noise() * self.epsilon
 			action.clamp_(-self.actionRange, self.actionRange)
 		return action
 
@@ -118,7 +131,6 @@ class DDPG():
 			## Updating priority of transition by last absolute td error
 			td = torch.abs(target_q - current_q).detach()
 			self.memory.update_priorities(indices, td + 1e-5)
-			return td.mean().item()
 
 	def decay_epsilon(self):
 		# self.epsilon *= self.epsDecay
@@ -127,6 +139,13 @@ class DDPG():
 
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
+		array_size = self.numEpisodes * self.epLen 
+		state_array = torch.zeros(array_size, self.observation_size)
+		action_array = torch.zeros(array_size, self.nActions)
+		reward_array = torch.zeros(array_size, 1)
+		next_state_array = torch.zeros(array_size, self.observation_size)
+		done_array = torch.zeros(array_size, 1)
+		array_index = 0
 
 		for episode in range(self.numEpisodes):
 
@@ -138,10 +157,16 @@ class DDPG():
 			initial = env.RMS.item()
 			lowest = initial
 
+			# self.noise.reset()
+
 			for t in tqdm(range(self.epLen), desc="train"):
 
 				## Select action and observe next state, reward
-				action = self.select_action(state)
+				if episode > self.randomEpisodes:
+					action = self.select_action(state)
+				else:
+					action = self.random_uniform_action()
+
 				nextState, reward = env.step(action)
 				episode_reward += reward
 
@@ -162,9 +187,15 @@ class DDPG():
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, action, reward, nextState, done))
-
+				state_array[array_index] = state
+				action_array[array_index] = action
+				reward_array[array_index] = reward
+				next_state_array[array_index] = nextState
+				done_array[array_index] = done
+				array_index += 1
 				## Preform bellman update
-				td = self.optimize_model()
+				if episode > self.learningBegins:
+					self.optimize_model()
 
 				## Break out of loop if terminal state
 				if done == 1:
@@ -186,20 +217,30 @@ class DDPG():
 				'lowest':lowest, 
 				'score':episode_reward})
 
-			## Save models
-			if episode % self.saveModels == 0:
-				torch.save(self.targetActor.state_dict(), 'actor.pt')
-				torch.save(self.targetCritic.state_dict(), 'critic.pt')
+			## Save
+			if episode % self.saveEvery == 0:
+				path = 'dataSets/4cyl0.45-0.35/'
+				torch.save(self.actor.state_dict(), path + 'actor.pt')
+				torch.save(self.critic.state_dict(), path + 'critic.pt')
+				torch.save(self.targetActor.state_dict(), path + 'targetActor.pt')
+				torch.save(self.targetCritic.state_dict(), path + 'targetCritic.pt')
+
+				torch.save(state_array[:array_index], path + 'states')
+				torch.save(action_array[:array_index], path + 'actions')
+				torch.save(reward_array[:array_index], path + 'rewards')
+				torch.save(next_state_array[:array_index], path + 'nextStates')
+				torch.save(done_array[:array_index], path + 'dones')
 
 			## Reduce exploration
-			self.decay_epsilon()
+			if episode > self.randomEpisodes:
+				self.decay_epsilon()
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 2
+	NCYL = 4
 	KMAX = .45
-	KMIN = .44
-	NFREQ = 2
+	KMIN = .35
+	NFREQ = 11
 
 	# ddpg params
 	IN_SIZE 		= 2 * NCYL + NFREQ + 2
@@ -215,11 +256,11 @@ if __name__ == '__main__':
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
 	EPSILON 		= 1.2		## Scale of random noise
-	DECAY_TIMESTEPS = 1_000		## How slowly to reduce epsilon
+	DECAY_TIMESTEPS = 8_000 	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000	## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
-	MEM_BETA 		= 0.5 		## No clue ????
+	MEM_BETA 		= 0.5
 	BATCH_SIZE 		= 64
 	NUM_EPISODES 	= 20_000
 	EP_LEN 			= 100

@@ -27,36 +27,41 @@ dqn = CylinderNet(
 	1,
 	env.nCyl * 4)
 
-dqn.load_state_dict(torch.load('ddqn.pt'))
-
-state = env.reset()
-
-results = {
-	'rms': env.RMS,
-	'config': env.config,
-	'tscs': env.TSCS
-}
-
-for t in range(100):
-	if random.random() > 0.05:
-		## Exploit
-		with torch.no_grad():
-			action = torch.argmax(dqn(state), dim=-1).item()
-	else:
-		## Explore
-		action = np.random.randint(2 * nCyl)
-
-	state, reward, done = env.step(action)
-
-	if env.RMS < results['rms']:
-		results['rms'] = env.RMS
-		results['config'] = env.config
-		results['tscs'] = env.TSCS
-
-	if done:
-		break
+dqn.load_state_dict(torch.load('3cylLongTrain.pt'))
 
 
-print(results)
-plt.imshow(env.getIMG(results['config']).view(50, 50))
-plt.show()
+def evaluate(env, agent):
+	state = env.reset()
+
+	results = {
+		'rms': env.RMS,
+		'config': env.config,
+		'tscs': env.TSCS
+	}
+
+	for t in range(100):
+		if random.random() > 0.1:
+			## Exploit
+			with torch.no_grad():
+				action = torch.argmax(dqn(state), dim=-1).item()
+		else:
+			## Explore
+			action = np.random.randint(2 * nCyl)
+
+		state, reward, done = env.step(action)
+
+		if env.RMS < results['rms']:
+			results['rms'] = env.RMS
+			results['config'] = env.config
+			results['tscs'] = env.TSCS
+
+		if done:
+			break
+	return results
+
+for _ in range(10):
+	results = evaluate(env, dqn)
+	print(results)
+
+# plt.imshow(env.getIMG(results['config']).view(50, 50))
+# plt.show()
