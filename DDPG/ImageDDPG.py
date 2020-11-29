@@ -38,7 +38,11 @@ class DDPG():
         ## Hard update
         #self.targetActor.load_state_dict(self.actor.state_dict())
         #self.targetCritic.load_state_dict(self.critic.state_dict())
-
+         
+        #targetActorCheckpoint = torch.load('savedModels/targetActor.pth.tar')
+        #targetCriticCheckpoint= torch.load('savedModels/targetCritic.pth.tar')
+        #self.targetActor.load_state_dict(targetActorCheckpoint['state_dict'])
+        #self.targetCritic.load_state_dict(targetCriticCheckpoint['state_dict'])
         ## Various hyperparameters
         self.gamma = params.GAMMA
         self.tau = params.TAU
@@ -222,15 +226,15 @@ class DDPG():
                 torch.save(targetActorCheckpoint, 'savedModels/targetActor.pth.tar')
                 torch.save(targetCriticCheckpoint, 'savedModels/targetCritic.pth.tar')
 
-                utils.plot('reward' + str(numIter), params.reward)
-                utils.plot('lowest' + str(numIter), params.lowest)
-                utils.plot('epsilon' + str(numIter), params.epsilon)
+                utils.plot('reward' + str(numIter+2500), params.reward)
+                utils.plot('lowest' + str(numIter+2500), params.lowest)
+                utils.plot('epsilon' + str(numIter+2500), params.epsilon)
                 maxReward = max(params.reward)
                 minTSCS = min(params.lowest)
                 minEpsilon = min(params.epsilon)
-                result = {'maxReward' + str(numIter): maxReward,
-                          'minTSCS' + str(numIter): minTSCS,
-                          'minEpsilon' + str(numIter): minEpsilon
+                result = {'maxReward' + str(numIter+2500): maxReward,
+                          'minTSCS' + str(numIter+2500): minTSCS,
+                          'minEpsilon' + str(numIter+2500): minEpsilon
                           }
                 utils.saveData(result)
 
@@ -251,13 +255,8 @@ if __name__ == '__main__':
     agent.memory.alpha = params.MEM_ALPHA
     agent.memory.beta = params.MEM_BETA
 
-    # utils.initWandb(params)
-    '''
-    targetActorCheckpoint = torch.load('savedModels/targetActor.pth.tar')
-    targetCriticCheckpoint= torch.load('savedModels/targetCritic.pth.tar') 
-    agent.targetActor.load_state_dict(targetActorCheckpoint['state_dict'])
-    agent.targetCritic.load_state_dict(targetCriticCheckpoint['state_dict'])
-    '''
+    # utils.initWandb(params) 
+    
     # Create env and agent
     env = TSCSEnv(params)
 
