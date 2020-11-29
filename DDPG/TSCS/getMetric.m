@@ -1,4 +1,4 @@
-function Q_RMS = getMetric(x, M, k0amax, k0amin, nfreq)
+function Q = getMetric(x, M, k0amax, k0amin, nfreq)
 
 a = 1;
 aa = 1;
