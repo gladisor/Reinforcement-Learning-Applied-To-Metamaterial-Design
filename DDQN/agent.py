@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from memory import NaivePrioritizedBuffer
 from models import DQN
+from models import NoisyDQN
 
 class Agent():
 	def __init__(self, 
@@ -18,9 +19,9 @@ class Agent():
 			memory_size, batch_size, lr):
 
 		## Networks -- Change this to custom nets
-		self.Qp = DQN()
+		self.Qp = NoisyDQN()
 		self.opt = torch.optim.RMSprop(self.Qp.parameters(), lr=lr)
-		self.Qt = DQN()
+		self.Qt = NoisyDQN()
 		self.Qt.load_state_dict(self.Qp.state_dict())
 		self.Qt.eval()
 

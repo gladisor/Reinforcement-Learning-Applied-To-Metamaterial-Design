@@ -1,6 +1,6 @@
 from env import TSCSEnv
 from agent import Agent
-from models import CylinderCoordConv, CylinderNet
+from models import CylinderCoordConv, CylinderNet, NoisyDQN
 import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
@@ -33,8 +33,10 @@ if __name__ == '__main__':
 		MEMORY_SIZE, BATCH_SIZE, LR)
 
 	# Defining models
-	agent.Qp = CylinderNet(H_SIZE, N_HIDDEN).cuda()
-	agent.Qt = CylinderNet(H_SIZE, N_HIDDEN).cuda()
+	# agent.Qp = CylinderNet(H_SIZE, N_HIDDEN).cuda()
+	# agent.Qt = CylinderNet(H_SIZE, N_HIDDEN).cuda()
+	agent.Qp = NoisyDQN().cuda()
+	agent.Qt = NoisyDQN().cuda()
 	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
 		agent.Qp.parameters(),
