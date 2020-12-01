@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 DDPG/wandb
+DDPG/dataSets/*
 DDQN/wandb
 DDQN/runs
 

@@ -65,7 +65,7 @@ if __name__ == '__main__':
 		momentum=MOMENTUM)
 	
 	agent.Qt.load_state_dict(agent.Qp.state_dict())
-	agent.nActions = nCyl * 2
+	agent.nActions = nCyl * 4
 
 	## This is the holder for transition data
 	agent.Transition = namedtuple('Transition', 
