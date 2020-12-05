@@ -29,7 +29,7 @@ class TSCSEnv():
 		self.counter = None
 
 		## Image transform
-		self.img_dim = 50
+		self.img_dim = 600
 		self.transform = transforms.Compose([
 			transforms.Resize((self.img_dim, self.img_dim)),
 			transforms.Grayscale(),

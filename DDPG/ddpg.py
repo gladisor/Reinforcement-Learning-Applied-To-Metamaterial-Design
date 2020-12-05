@@ -219,7 +219,7 @@ class DDPG():
 
 			## Save
 			if episode % self.saveEvery == 0:
-				path = 'dataSets/4cyl0.45-0.35/'
+				path = 'dataSets/10cyl0.45-0.35/'
 				torch.save(self.actor.state_dict(), path + 'actor.pt')
 				torch.save(self.critic.state_dict(), path + 'critic.pt')
 				torch.save(self.targetActor.state_dict(), path + 'targetActor.pt')
@@ -237,7 +237,7 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 4
+	NCYL = 10
 	KMAX = .45
 	KMIN = .35
 	NFREQ = 11
