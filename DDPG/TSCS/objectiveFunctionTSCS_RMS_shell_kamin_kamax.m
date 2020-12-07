@@ -1,26 +1,38 @@
-function [Q_RMS,qV,kav,Q] = objectiveFunctionTSCS_RMSka_min_max(x,a,aa,M,ha,c_p,rho_sh,k0amax,k0amin,nfreq)
+function [Q_RMS,qV] = objectiveFunctionTSCS_RMS_shell_kamin_kamax(x,a,aa,M,kamax,kamin,nfreq)
+% function [Q_RMS,qV,kav] = objectiveFunctionTSCS_RMS(x,a,aa,M,ha,c_p,rho_sh,k0amax,nfreq)
+%Objective function of RMS ofTotal Scattering Cross Section of random planar configuration of cylinders
+%for acoustic plane incident wave for band of frequency %tic
 xM=(reshape(x',2,M))';
-XM= [xM(:,1)];
-YM= [xM(:,2)];
+XM= xM(:,1);
+YM= xM(:,2);
 absr= sqrt(XM.^2 + YM.^2);          % |r_j|
 argr = atan2(YM,XM);                % argument of vector r_j
 if argr <0 
     argr= argr+2*pi;
 end
+% %%%%%%%%%%%%%%%%%   Shell properties   %%%%%%%%%%%%%%%%%%%%%%%%%
+ha =aa/10;%0.025*aa;% aa/10;% 0.025;
+c_p = 5480; rho_sh = 8850;
 % %%%%%%%%%%%%%%%%% Properties of water  %%%%%%%%%%%%%%%%%%%%%%%%%%
 rho =1000;  c0=1480;  %kap0=rho*(c0)^2;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-freqmax = (k0amax)*c0/(2*pi*a);        %max freq to give ka=20
-freqmin = (k0amin)*c0/(2*pi*a); 
+freqmax = (kamax)*c0/(2*pi*a);        %max freq to give ka=k0max
+freqmin = (kamin)*c0/(2*pi*a);
+%df=freqmax/nfreq;
 df=(freqmax-freqmin)/(nfreq-1);
+%freqv = df:df:freqmax; 
 freqv = freqmin:df:freqmax; 
+% freqv = ((0.5)*c0/(2*pi*a)+df):df:freqmax;  
+% freqv = df:df:freqmax;  
+% freqv = 0.004:df:freqmax;% freqv = df+0.003:df:freqmax
 kav = zeros(size(freqv));
 Q =zeros(nfreq,1);
+% Q_square=zeros(nfreq,1);
 s_j = zeros(nfreq,M,2) ;
 q_j = zeros(nfreq,M,2) ;
 
-parfor Ifreq=1:length(freqv)
+for Ifreq=1:length(freqv)
     freq=freqv(Ifreq);   omega = 2*pi*freq;    
     k0 = omega/c0;
     ka=k0*a;
@@ -31,19 +43,19 @@ parfor Ifreq=1:length(freqv)
  N=nmax;
  nv = -nmax:nmax;
 % %  THE T_n diagonal matrix .....  
-% % T matrix  for inner Rigid cilinders
-%Jpvka =(besselj(nv'-1,ka) -  besselj(nv'+1,ka))/2;
-%Hpvka =(besselh(nv'-1,ka) -  besselh(nv'+1,ka))/2;
+% % T matrix  for inner Rigid cylinders
+% Jpvka =(besselj(nv'-1,ka) -  besselj(nv'+1,ka))/2;
+% Hpvka =(besselh(nv'-1,ka) -  besselh(nv'+1,ka))/2;
 %T_0 = diag( -( Jpvka )./ ( Hpvka ) );
-% % % T matrix  for outer cloaking cilinders
-%Jpvkaa =(besselj(nv'-1,kaa) -  besselj(nv'+1,kaa))/2;
-%Hpvkaa =(besselh(nv'-1,kaa) -  besselh(nv'+1,kaa))/2;
-%T_1 = diag( -( Jpvkaa )./ ( Hpvkaa ) );
+% % % T matrix  for outer cloaking cylinders
+% Jpvkaa =(besselj(nv'-1,kaa) -  besselj(nv'+1,kaa))/2;
+% Hpvkaa =(besselh(nv'-1,kaa) -  besselh(nv'+1,kaa))/2;
+% T_1 = diag( -( Jpvkaa )./ ( Hpvkaa ) );
 %%% T matrix for thin elastic shells
 T_0 = T_shell(ka,nv,rho,c0,ha,c_p,rho_sh);
 T_1=T_0;
 T = cell(1,M);
-%T{1}=T_0;
+% T{1}=T_0;
     for j=1:M
         T{j} = T_1;
     end
@@ -93,7 +105,6 @@ for j = 1:M; %loop over cylinder j with cylinder m
                 argrjm(j,m)= argrjm(j,m)+2*pi;
             end
 
-            % Change to parfor
             for I=1:numel(nv)
                 I;
                 n=nv(I);
@@ -212,7 +223,7 @@ C_nm=zeros((2*N+1),M);
 end
 Q_RMS = sqrt ( (1/nfreq )*(sum(Q.^2)));
 q_RMS_j = zeros(M,2);
-q_RMS_j(:,:) = (1/ ((nfreq)*Q_RMS) ) * (sum (q_j,1)) ;
+q_RMS_j(:,:) = (1/ (nfreq*Q_RMS) ) * (sum (q_j,1)) ;
 % kav=kav
 qV= reshape( q_RMS_j.',2*M,1);
 

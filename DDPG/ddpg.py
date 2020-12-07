@@ -61,8 +61,8 @@ class DDPG():
 		self.numEpisodes = numEpisodes
 		self.epLen = epLen
 		self.saveEvery = 1000
-		self.randomEpisodes = 1000
-		self.learningBegins = 500
+		self.randomEpisodes = 0
+		self.learningBegins = 0
 
 	def select_action(self, state):
 		with torch.no_grad():
@@ -219,7 +219,7 @@ class DDPG():
 
 			## Save
 			if episode % self.saveEvery == 0:
-				path = 'dataSets/2cyl0.45-0.35/'
+				path = 'dataSets/3cyl0.45-0.35/'
 				torch.save(self.actor.state_dict(), path + 'actor.pt')
 				torch.save(self.critic.state_dict(), path + 'critic.pt')
 				torch.save(self.targetActor.state_dict(), path + 'targetActor.pt')
@@ -237,7 +237,7 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 10
+	NCYL = 3
 	KMAX = .45
 	KMIN = .35
 	NFREQ = 11
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
 	EPSILON 		= 1.2		## Scale of random noise
-	DECAY_TIMESTEPS = 8_000 	## How slowly to reduce epsilon
+	DECAY_TIMESTEPS = 1_000 	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000	## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)

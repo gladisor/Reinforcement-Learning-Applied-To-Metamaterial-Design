@@ -48,7 +48,7 @@ def evaluate(actor, env):
 
 if __name__ == '__main__':
 	actor = Actor(17, 2, 128, 4, 0.5)
-	actor.load_state_dict(torch.load('savedModels/2cyl0.45-0.35.pt', map_location=torch.device('cpu')))
+	actor.load_state_dict(torch.load('dataSets/2cyl0.45-0.35/actor.pt', map_location=torch.device('cpu')))
 	env = TSCSEnv(nCyl=2, k0amax=.45, k0amin=.35, nfreq=11)
 
 	results = evaluate(actor, env)

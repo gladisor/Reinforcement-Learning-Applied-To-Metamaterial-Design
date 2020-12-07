@@ -10,3 +10,4 @@ if max(size(gcp)) == 0 % parallel pool needed
 end
 
 [Q_RMS,qV,kav,Q] = objectiveFunctionTSCS_RMSka_min_max(x,a,aa,M,ha,c_p,rho_sh,k0amax,k0amin,nfreq);
+%[Q_RMS,qV,kav,Q] = objectiveFunctionTSCS_RMS_shell_kamin_kamax(x,a,aa,M,kamax,kamin,nfreq)
