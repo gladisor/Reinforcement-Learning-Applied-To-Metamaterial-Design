@@ -237,7 +237,7 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 3
+	NCYL = 2
 	KMAX = .45
 	KMIN = .35
 	NFREQ = 11

@@ -1,6 +1,6 @@
 from env import TSCSEnv
 from agent import Agent
-from models import CylinderCoordConv, CylinderNet
+from models import CylinderCoordConv, CylinderNet, NoisyDQN
 import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ if __name__ == '__main__':
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY_STEPS = 2500
+	EPS_DECAY_STEPS = 1000
 	TARGET_UPDATE = 10
 	MEMORY_SIZE = 1_000_000
 	BATCH_SIZE = 64
@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	H_SIZE = 128
 	N_HIDDEN = 1
 
-	nCyl=3
+	nCyl=2
 	k0amax=0.45
 	k0amin=0.35
 	nfreq=11
