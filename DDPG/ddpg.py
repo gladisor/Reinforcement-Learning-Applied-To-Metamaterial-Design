@@ -61,8 +61,8 @@ class DDPG():
 		self.numEpisodes = numEpisodes
 		self.epLen = epLen
 		self.saveEvery = 1000
-		self.randomEpisodes = 1000
-		self.learningBegins = 500
+		self.randomEpisodes = 100
+		self.learningBegins = 0
 
 	def select_action(self, state):
 		with torch.no_grad():
@@ -139,13 +139,13 @@ class DDPG():
 
 	def learn(self, env):
 		## Create file to store run data in using tensorboard
-		array_size = self.numEpisodes * self.epLen 
-		state_array = torch.zeros(array_size, self.observation_size)
-		action_array = torch.zeros(array_size, self.nActions)
-		reward_array = torch.zeros(array_size, 1)
-		next_state_array = torch.zeros(array_size, self.observation_size)
-		done_array = torch.zeros(array_size, 1)
-		array_index = 0
+		# array_size = self.numEpisodes * self.epLen 
+		# state_array = torch.zeros(array_size, self.observation_size)
+		# action_array = torch.zeros(array_size, self.nActions)
+		# reward_array = torch.zeros(array_size, 1)
+		# next_state_array = torch.zeros(array_size, self.observation_size)
+		# done_array = torch.zeros(array_size, 1)
+		# array_index = 0
 
 		for episode in range(self.numEpisodes):
 
@@ -187,12 +187,13 @@ class DDPG():
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, action, reward, nextState, done))
-				state_array[array_index] = state
-				action_array[array_index] = action
-				reward_array[array_index] = reward
-				next_state_array[array_index] = nextState
-				done_array[array_index] = done
-				array_index += 1
+				# state_array[array_index] = state
+				# action_array[array_index] = action
+				# reward_array[array_index] = reward
+				# next_state_array[array_index] = nextState
+				# done_array[array_index] = done
+				# array_index += 1
+
 				## Preform bellman update
 				if episode > self.learningBegins:
 					self.optimize_model()
@@ -219,17 +220,17 @@ class DDPG():
 
 			## Save
 			if episode % self.saveEvery == 0:
-				path = 'dataSets/10cyl0.45-0.35/'
-				torch.save(self.actor.state_dict(), path + 'actor.pt')
-				torch.save(self.critic.state_dict(), path + 'critic.pt')
-				torch.save(self.targetActor.state_dict(), path + 'targetActor.pt')
-				torch.save(self.targetCritic.state_dict(), path + 'targetCritic.pt')
+				path = 'savedModels/junkRun/'
+				torch.save(self.actor.state_dict(), path + f'actor{episode}.pt')
+				torch.save(self.critic.state_dict(), path + f'critic{episode}.pt')
+				torch.save(self.targetActor.state_dict(), path + f'targetActor{episode}.pt')
+				torch.save(self.targetCritic.state_dict(), path + f'targetCritic{episode}.pt')
 
-				torch.save(state_array[:array_index], path + 'states')
-				torch.save(action_array[:array_index], path + 'actions')
-				torch.save(reward_array[:array_index], path + 'rewards')
-				torch.save(next_state_array[:array_index], path + 'nextStates')
-				torch.save(done_array[:array_index], path + 'dones')
+				# torch.save(state_array[:array_index], path + 'states')
+				# torch.save(action_array[:array_index], path + 'actions')
+				# torch.save(reward_array[:array_index], path + 'rewards')
+				# torch.save(next_state_array[:array_index], path + 'nextStates')
+				# torch.save(done_array[:array_index], path + 'dones')
 
 			## Reduce exploration
 			if episode > self.randomEpisodes:
@@ -237,9 +238,9 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 10
-	KMAX = .45
-	KMIN = .35
+	NCYL = 2
+	KMAX = .6
+	KMIN = .3
 	NFREQ = 11
 
 	# ddpg params
@@ -256,7 +257,7 @@ if __name__ == '__main__':
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
 	EPSILON 		= 1.2		## Scale of random noise
-	DECAY_TIMESTEPS = 8_000 	## How slowly to reduce epsilon
+	DECAY_TIMESTEPS = 1000	 	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000	## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
