@@ -25,7 +25,7 @@ class NaivePrioritizedBuffer(object):
 		probs = prios ** self.prob_alpha
 		probs /= probs.sum()
 
-		indices = np.random.choice(len(self.memory), batch_size, p=probs)
+		indices = np.random.choice(len(self.memory), batch_size, p=probs, replace=False)
 		samples = [self.memory[idx] for idx in indices]
 
 		total = len(self.memory)

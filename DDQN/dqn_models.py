@@ -4,22 +4,8 @@ import torch.nn as nn
 from coordconv import AddLayers
 
 class DQN(nn.Module):
-	## Base model for lunar lander
-	def __init__(self):
-		super(DQN, self).__init__()
-		self.fc1 = nn.Linear(8, 100)
-		self.v = nn.Linear(100, 1)
-		self.adv = nn.Linear(100, 4)
-
-	def forward(self, s):
-		x = torch.relu(self.fc1(s))
-		a = self.adv(x)
-		q = self.v(x) + a - a.mean(-1, keepdim=True)
-		return q
-
-class CylinderNet(nn.Module):
 	def __init__(self, inSize, h_size, n_hidden, nActions):
-		super(CylinderNet, self).__init__()
+		super(DQN, self).__init__()
 		self.fc = nn.Linear(inSize, h_size)
 		self.hidden = nn.ModuleList()
 		for _ in range(n_hidden):
@@ -27,10 +13,12 @@ class CylinderNet(nn.Module):
 		self.v = nn.Linear(h_size, 1)
 		self.adv = nn.Linear(h_size, nActions)
 
-	def forward(self, s):
-		x = torch.cat([*s], dim=-1)
-		if next(self.parameters()).is_cuda:
-			x = x.cuda()
+		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+		self.to(self.device)
+
+
+	def forward(self, x):
+		x = x.to(self.device)
 
 		x = relu(self.fc(x))
 		for layer in self.hidden:

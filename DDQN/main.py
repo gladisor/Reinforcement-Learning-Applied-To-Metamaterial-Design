@@ -5,15 +5,14 @@ import torch
 from collections import namedtuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 if __name__ == '__main__':
-	import wandb
 	## Hyperparameters
 	GAMMA = 0.9
 	EPS = 1
 	EPS_END = 0.1
-	EPS_DECAY_STEPS = 2500
+	EPS_DECAY_STEPS = 2000
 	TARGET_UPDATE = 10
 	MEMORY_SIZE = 1_000_000
 	BATCH_SIZE = 64
@@ -50,13 +49,13 @@ if __name__ == '__main__':
 		env.nCyl * 2 + env.F + 2,
 		H_SIZE, 
 		N_HIDDEN,
-		env.nCyl * 4).cuda()
+		env.nCyl * 4)
 
 	agent.Qt = CylinderNet(
 		env.nCyl * 2 + env.F + 2,
 		H_SIZE,
 		N_HIDDEN,
-		env.nCyl * 4).cuda()
+		env.nCyl * 4)
 
 	agent.Qt.eval()
 	agent.opt = torch.optim.SGD(
@@ -68,11 +67,7 @@ if __name__ == '__main__':
 	agent.nActions = nCyl * 4
 
 	## This is the holder for transition data
-	agent.Transition = namedtuple('Transition', 
-		('c','tscs','rms','time',
-		'a','r',
-		'c_','tscs_','rms_','time_','done'))
-
+	agent.Transition = namedtuple('Transition', ('s','a','r','s_','done'))
 
 	step = 0
 
@@ -82,9 +77,9 @@ if __name__ == '__main__':
 		state = env.reset()
 
 		## Record initial scattering
-		initial = state[1].mean().item()
+		initial = env.RMS.item()
 		lowest = initial
-		for t in tqdm(range(EPISODE_LEN)):
+		for t in tqdm(range(EPISODE_LEN + 1)):
 			## Select action, observe nextState & reward
 			action = agent.select_action(state)
 			nextState, reward, done = env.step(action)
@@ -93,17 +88,17 @@ if __name__ == '__main__':
 			step += 1
 
 			# Update current lowest
-			current = state[1].mean().item()
+			current = env.RMS.item()
 			if current < lowest:
 				lowest = current
 
-			if t == EPISODE_LEN:
-				done = True
+			# if t == EPISODE_LEN:
+			# 	done = True
 
 			action = torch.tensor([[action]])
 			reward = torch.tensor([[reward]]).float()
 			done = torch.tensor([done])
-			e = agent.Transition(*state, action, reward, *nextState, done)
+			e = agent.Transition(state, action, reward, nextState, done)
 
 			## Add most recent transition to memory and update model
 			agent.memory.push(e)
@@ -135,4 +130,6 @@ if __name__ == '__main__':
 
 		## Save models
 		if episode % 100 == 0:
-			torch.save(agent.Qp.state_dict(), f'ddqn.pt')
+			path = 'voidResults/3cyl_2000epDecay/'
+			torch.save(agent.Qp.state_dict(), path + f'Qpolicy{episode}.pt')
+			torch.save(agent.Qp.state_dict(), path + f'Qtarget{episode}.pt')

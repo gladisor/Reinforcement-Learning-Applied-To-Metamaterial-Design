@@ -20,7 +20,7 @@ Q =zeros(nfreq,1);
 s_j = zeros(nfreq,M,2) ;
 q_j = zeros(nfreq,M,2) ;
 
-for Ifreq=1:length(freqv)
+parfor Ifreq=1:length(freqv)
     freq=freqv(Ifreq);   omega = 2*pi*freq;    
     k0 = omega/c0;
     ka=k0*a;
@@ -93,6 +93,7 @@ for j = 1:M; %loop over cylinder j with cylinder m
                 argrjm(j,m)= argrjm(j,m)+2*pi;
             end
 
+            % Change to parfor
             for I=1:numel(nv)
                 I;
                 n=nv(I);

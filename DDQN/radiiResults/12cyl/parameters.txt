@@ -1,0 +1,20 @@
+	GAMMA = 0.9
+	EPS = 1
+	EPS_END = 0.1
+	EPS_DECAY_STEPS = 3000
+	TARGET_UPDATE = 10
+	MEMORY_SIZE = 1_000_000
+	BATCH_SIZE = 64
+	LR = 0.0005
+	MOMENTUM = 0.9
+	NUM_EPISODES = 5000
+	EPISODE_LEN = 100
+	H_SIZE = 128
+	N_HIDDEN = 2
+
+	k0amax=0.45
+	k0amin=0.35
+	nfreq=11
+
+	r = [2.1, 4.1]
+	n = [4, 8]			

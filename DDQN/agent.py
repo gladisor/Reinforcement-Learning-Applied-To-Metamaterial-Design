@@ -10,7 +10,6 @@ import numpy as np
 from tqdm import tqdm
 
 from memory import NaivePrioritizedBuffer
-from models import DQN
 
 class Agent():
 	def __init__(self, 
@@ -18,11 +17,9 @@ class Agent():
 			memory_size, batch_size, lr):
 
 		## Networks -- Change this to custom nets
-		self.Qp = DQN()
-		self.opt = torch.optim.RMSprop(self.Qp.parameters(), lr=lr)
-		self.Qt = DQN()
-		self.Qt.load_state_dict(self.Qp.state_dict())
-		self.Qt.eval()
+		self.Qp = None
+		self.opt = None
+		self.Qt = None
 
 		## Hyperperameters
 		self.gamma = gamma
@@ -48,29 +45,16 @@ class Agent():
 
 	def extract_tensors(self, batch):
 		## State info
-		s = (
-			cat(batch.c),
-			cat(batch.tscs),
-			cat(batch.rms),
-			cat(batch.time))
+		s = cat(batch.s)
 
 		## Action, reward
-		a = cat(batch.a)
-		r = cat(batch.r)
+		a = cat(batch.a).to(self.Qp.device)
+		r = cat(batch.r).to(self.Qp.device)
 
 		## Next state info
-		s_ = (
-			cat(batch.c_),
-			cat(batch.tscs_),
-			cat(batch.rms_),
-			cat(batch.time_))
+		s_ = cat(batch.s_)
 		
-		done = cat(batch.done)
-
-		if next(self.Qp.parameters()).is_cuda:
-			a = a.cuda()
-			r = r.cuda()
-			done = done.cuda()
+		done = cat(batch.done).to(self.Qp.device)
 		return s, a, r, s_, done
 
 	def optimize_model(self):
@@ -111,7 +95,6 @@ class Agent():
 			self.opt.step()
 
 			## Update priorities of sampled batch
-			# self.memory.update_priorities(indices, prios)
 			self.memory.update_priorities(indices, torch.abs(td).detach())
 			return loss.item()
 

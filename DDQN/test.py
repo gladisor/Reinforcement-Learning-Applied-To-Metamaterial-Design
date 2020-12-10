@@ -1,6 +1,6 @@
 # import gym
 import torch
-from models import CylinderCoordConv, CylinderNet, DQN
+from models import DQN
 from env import TSCSEnv
 import matplotlib.pyplot as plt
 import numpy as np
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 		nfreq=nfreq, 
 		stepSize=STEP_SIZE)
 
-	dqn = CylinderNet(
+	dqn = DQN(
 		env.nCyl * 2 + env.F + 2,
 		128, 
 		1,

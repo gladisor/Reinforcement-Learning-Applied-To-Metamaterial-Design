@@ -70,7 +70,7 @@ class TSCSEnv():
 
 	def getMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
-		tscs = self.eng.getMetric(x, self.M, self.k0amax, self.k0amin, self.nfreq)
+		tscs = self.eng.getMetric_VoidCylinder(x, self.M, self.k0amax, self.k0amin, self.nfreq)
 		tscs = torch.tensor(tscs).T
 		rms = tscs.pow(2).mean().sqrt().view(1,1)
 		return tscs, rms
@@ -103,9 +103,6 @@ class TSCSEnv():
 		plt.close(fig)
 		return X.unsqueeze(0)
 
-	def getTime(self):
-		return self.counter/100
-
 	def getReward(self, RMS, isValid):
 		"""
 		Computes reward based on change in scattering 
@@ -123,16 +120,10 @@ class TSCSEnv():
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
-		time = self.getTime()
-		if list(self.TSCS.shape) == []:
-			self.TSCS = self.TSCS.view(1, 1)
+		# if list(self.TSCS.shape) == []:
+		# 	self.TSCS = self.TSCS.view(1, 1)
 
-		state = (
-			self.config, 
-			self.TSCS, 
-			self.RMS,
-			# self.img,
-			time)
+		state = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
 		return state
 
 	def getNextConfig(self, config, action):
@@ -169,20 +160,14 @@ class TSCSEnv():
 			self.config = prevConfig
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
-		self.counter += 1
-		time = self.getTime()
+		self.counter += 1/100
 
 		reward = self.getReward(self.RMS, isValid)
 
-		nextState = (
-			self.config,
-			self.TSCS,
-			self.RMS,
-			# self.img,
-			time)
+		nextState = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float() 
 
 		done = False
-		if int(time) == 1:
+		if int(self.counter.item()) == 1:
 			done = True
 		return nextState, reward, done
 
