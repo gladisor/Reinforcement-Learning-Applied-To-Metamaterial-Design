@@ -7,7 +7,7 @@ import imageio
 
 def evaluate(actor, env):
 	state = env.reset()
-	env.config = torch.tensor([[ 4.5641, -2.7947,  2.8730,  0.4883]])
+	env.config = torch.tensor([[2.1690, -1.1629, -2.6250,  2.1641,  3.1213,  1.5562,  0.3477,  4.4343]])
 	env.TSCS, env.RMS = env.getMetric(env.config)
 	env.counter = torch.tensor([[0.0]])
 	time = env.getTime()
@@ -47,9 +47,9 @@ def evaluate(actor, env):
 	return results
 
 if __name__ == '__main__':
-	actor = Actor(17, 2, 128, 4, 0.5)
-	actor.load_state_dict(torch.load('dataSets/2cyl0.45-0.35/actor.pt', map_location=torch.device('cpu')))
-	env = TSCSEnv(nCyl=2, k0amax=.45, k0amin=.35, nfreq=11)
+	actor = Actor(21, 2, 128, 8, 0.5)
+	actor.load_state_dict(torch.load('dataSets/4cyl0.45-0.35/actor.pt', map_location=torch.device('cpu')))
+	env = TSCSEnv(nCyl=4, k0amax=.45, k0amin=.35, nfreq=11)
 
 	results = evaluate(actor, env)
 	minIdx = results['rms'].index(min(results['rms']))

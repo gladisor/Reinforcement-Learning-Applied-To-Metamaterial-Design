@@ -3,22 +3,23 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-nCyl = 2
+nCyl = 4
 k0amax = 0.45
 k0amin = 0.35
 nfreq = 11
 env = TSCSEnv(nCyl=nCyl, k0amax=k0amax, k0amin=k0amin, nfreq=nfreq)
-initial = torch.tensor([[ 4.5641, -2.7947,  2.8730,  0.4883]])
-ddqn = torch.tensor([[ 3.5641,  1.2053, -0.1270,  0.9883]])
-ddpg = torch.tensor([[ 1.5507, -4.6323,  1.4452,  4.3772]])
+# initial = torch.tensor([[ 4.5641, -2.7947,  2.8730,  0.4883]])
+# ddqn = torch.tensor([[ 3.5641,  1.2053, -0.1270,  0.9883]])
+ddpg = torch.tensor([[ 1.4096, -4.3789, -2.5684, -4.5559,  2.0932,  4.4449, -2.1314,  4.5981]])
 
-initialTSCS, _ = env.getMetric(initial)
-ddqnTSCS, _ = env.getMetric(ddqn)
-ddpgTSCS, _ = env.getMetric(ddpg)
+# initialTSCS, _ = env.getMetric(initial)
+# ddqnTSCS, _ = env.getMetric(ddqn)
+ddpgTSCS, ddpgRMS = env.getMetric(ddpg)
 
-print(initialTSCS)
-print(ddqnTSCS)
+# print(initialTSCS)
+# print(ddqnTSCS)
 print(ddpgTSCS)
+print(ddpgRMS)
 
 # plt.plot(initialTSCS[0], label='initial')
 # plt.plot(ddqnTSCS[0], label='ddqn')
