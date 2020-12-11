@@ -28,8 +28,8 @@ if __name__ == '__main__':
 	k0amin=0.35
 	nfreq=11
 
-	r = [2.1, 4.1]
-	n = [4, 8]
+	r = [3.1]
+	n = [9]
 
 	circle = rtpairs(r, n)
 	## Creating environment object
@@ -39,7 +39,7 @@ if __name__ == '__main__':
 		nfreq=nfreq, 
 		config=circle)
 
-	wandb.init(project='tscs-ddpg-radii')
+	wandb.init(project='tscs-ddpg-radii', name='9cyl3.1Rad')
 
 	## Creating agent object with parameters
 	agent = Agent(
@@ -129,6 +129,6 @@ if __name__ == '__main__':
 
 		## Save models
 		if episode % 100 == 0:
-			path = 'radiiResults/12cyl/'
+			path = 'radiiResults/9cyl/'
 			torch.save(agent.Qp.state_dict(), path + f'Qpolicy{episode}.pt')
 			torch.save(agent.Qp.state_dict(), path + f'Qtarget{episode}.pt')

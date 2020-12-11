@@ -14,9 +14,11 @@ k0amax=0.45
 k0amin=0.35
 nfreq=11
 
-r = [2.1, 4.1]
-n = [4, 8]
+r = [3.1]
+n = [9]
 circle = rtpairs(r, n)
+
+print(circle)
 
 env = DiscreteRadiusEnv(
 	k0amax=k0amax,
@@ -31,7 +33,7 @@ dqn = DQN(
 	N_HIDDEN,
 	env.action_space)
 
-dqn.load_state_dict(torch.load('radiiResults/12cyl/Qpolicy3600.pt'))
+dqn.load_state_dict(torch.load('radiiResults/9cyl/Qpolicy3600.pt'))
 
 state = env.reset()
 
@@ -44,7 +46,7 @@ results['radii'].append(env.radii)
 results['rms'].append(env.RMS)
 results['tscs'].append(env.TSCS)
 
-writer = imageio.get_writer('test2ring.mp4', format='mp4', mode='I', fps=15)
+writer = imageio.get_writer('test9cyl.mp4', format='mp4', mode='I', fps=15)
 img = env.getIMG(env.radii)
 writer.append_data(img.view(env.img_dim, env.img_dim).numpy())
 
