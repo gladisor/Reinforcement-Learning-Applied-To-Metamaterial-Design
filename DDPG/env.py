@@ -16,6 +16,7 @@ class TSCSEnv():
 
 		## Hyperparameters
 		self.nCyl = nCyl
+		self.F = nfreq
 		self.M = matlab.double([nCyl])
 		self.k0amax = matlab.double([k0amax])
 		self.k0amin = matlab.double([k0amin])
@@ -68,7 +69,7 @@ class TSCSEnv():
 
 	def getMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
-		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.k0amax, self.k0amin, self.nfreq)
+		tscs = self.eng.getMetric(x, self.M, self.k0amax, self.k0amin, self.nfreq)
 		tscs = torch.tensor(tscs).T
 		rms = tscs.pow(2).mean().sqrt().view(1,1)
 		return tscs, rms
@@ -158,3 +159,11 @@ class TSCSEnv():
 			
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
 		return nextState, reward
+
+if __name__ == '__main__':
+	env = TSCSEnv(nCyl=1, k0amax=0.45, k0amin=0.35, nfreq=11)
+	env.reset()
+	env.config = torch.tensor([[0.0, 0.0, 3.0, 3.0]])
+	env.TSCS, env.RMS = env.getMetric(env.config)
+	env.counter = torch.tensor([[0.0]])
+	print(env.TSCS)

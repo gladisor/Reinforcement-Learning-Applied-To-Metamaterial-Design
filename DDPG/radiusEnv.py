@@ -11,17 +11,17 @@ class RadiusEnv(TSCSEnv):
 	"""docstring for RadiusEnv"""
 	def __init__(self, k0amax, k0amin, nfreq, config):
 		super(RadiusEnv, self).__init__(int(len(config)), k0amax, k0amin, nfreq)
+		## Configuration of cylinders to be held fixed
+		self.center_config = torch.tensor([[0.0, 0.0]])
+		self.center_radii = torch.ones(1, self.center_config.shape[0])*1.6
+		self.center_c_p = torch.tensor([5480.0])
+		self.center_rho_sh = torch.tensor([8850.0])
+
 		## Configuration of cylinders to be optimized
 		self.config = torch.tensor(config)
 		self.radii = None
 		self.c_pv = None
-		self.rho_sh = None
-
-		## Configuration of cylinders to be held fixed
-		self.center_config = torch.tensor([[0.0, 0.0]])
-		self.center_radii = torch.ones(1, self.center_config.shape[0])
-		self.center_c_p = torch.tensor([5480.0])
-		self.center_rho_sh = torch.tensor([8850.0])
+		self.rho_shv = None
 
 		## Radius range
 		self.minRadii = 0.2
@@ -39,11 +39,13 @@ class RadiusEnv(TSCSEnv):
 		withinBounds = False
 		overlap = False
 
-		all_radii = torch.cat([radii, self.center_radii], dim=-1)
+		# all_radii = torch.cat([radii, self.center_radii], dim=-1)
+		all_radii = radii
 		if (self.minRadii <= all_radii).all() and (all_radii <= self.maxRadii).all():
 			withinBounds = True
 
-			coords = torch.cat([self.config, self.center_config], dim=0)
+			# coords = torch.cat([self.config, self.center_config], dim=0)
+			coords = self.config
 			for i in range(coords.shape[0]):
 				for j in range(coords.shape[0]):
 					if i != j:
@@ -76,6 +78,7 @@ class RadiusEnv(TSCSEnv):
 		ax.grid()
 
 		coords = torch.cat([self.config, self.center_config], dim=0)
+
 		all_radii = torch.cat([radii, self.center_radii], dim=-1)
 		for cyl in range(coords.shape[0]):
 			ax.add_artist(Circle((coords[cyl, 0], coords[cyl, 1]), radius=all_radii[0, cyl]))
@@ -95,33 +98,39 @@ class RadiusEnv(TSCSEnv):
 
 	def getMetric(self, radii):
 		coords = torch.cat([self.config, self.center_config], dim=0)
-		xM = matlab.double(coords.tolist())
 		all_radii = torch.cat([self.radii, self.center_radii], dim=-1)
-		av = matlab.double(all_radii.tolist())
+		all_c_pv = torch.cat([self.c_pv, self.center_c_p])
+		all_rho_shv = torch.cat([self.rho_shv, self.center_rho_sh])
 
-		c_pv = torch.ones(coords.shape[0])*self.center_c_p
-		c_pv = matlab.double(c_pv.tolist())
-		rho_shv = torch.ones(coords.shape[0])*self.center_rho_sh
-		rho_shv = matlab.double(rho_shv.tolist())
+		xM = matlab.double(coords.tolist())
+		av = matlab.double(all_radii.tolist())
+		c_pv = matlab.double(all_c_pv.tolist())
+		rho_shv = matlab.double(all_rho_shv.tolist())
+
 		tscs = self.eng.getMetric_thinShells_radii_material(xM, av, c_pv, rho_shv, self.k0amax, self.k0amin, self.nfreq)
-		# tscs = self.eng.getMetric_RigidCylinder_radii(xM, av, self.k0amax, self.k0amin, self.nfreq)
+
 		tscs = torch.tensor(tscs).T
 		rms = tscs.pow(2).mean().sqrt().view(1,1)
 		return tscs, rms
 
 	def reset(self):
 		self.radii = self.getInitialRadii()
+
+		material_vector = torch.ones(self.config.shape[0] + self.center_config.shape[0])
+		self.c_pv = material_vector*self.center_c_p
+		self.rho_shv = material_vector*self.center_rho_sh
+
 		self.TSCS, self.RMS = self.getMetric(self.radii)
 		self.counter = torch.tensor([[0.0]])
 		state = torch.cat([self.radii, self.TSCS, self.RMS, self.counter], dim=-1)
 		return state
 
-	def getNextState(self, radii, action):
+	def getNextRadii(self, radii, action):
 		return radii + action
 
 	def step(self, action):
 		prevRadii = self.radii.clone()
-		nextRadii = self.getNextState(self.radii.clone(), action)
+		nextRadii = self.getNextRadii(self.radii.clone(), action)
 		isValid = self.validRadii(nextRadii)
 
 		if isValid:
@@ -155,7 +164,7 @@ if __name__ == '__main__':
 	actionRange = (env.maxRadii - env.minRadii)/20
 
 	import imageio
-	writer = imageio.get_writer('continuousRadii.mp4', format='mp4', mode='I', fps=15)
+	writer = imageio.get_writer('bigCentral.mp4', format='mp4', mode='I', fps=15)
 
 	env.reset()
 	done = False
@@ -167,7 +176,6 @@ if __name__ == '__main__':
 
 		nextState, reward, done = env.step(action)
 		img = env.getIMG(env.radii)
-		print(env.getMetric(env.radii))
 		writer.append_data(img.view(env.img_dim, env.img_dim).numpy())
 
 	writer.close()
