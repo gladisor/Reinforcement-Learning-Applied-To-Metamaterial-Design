@@ -10,7 +10,7 @@ nfreq = 11
 env = TSCSEnv(nCyl=nCyl, k0amax=k0amax, k0amin=k0amin, nfreq=nfreq)
 # initial = torch.tensor([[ 4.5641, -2.7947,  2.8730,  0.4883]])
 # ddqn = torch.tensor([[ 3.5641,  1.2053, -0.1270,  0.9883]])
-ddpg = torch.tensor([[ 1.4096, -4.3789, -2.5684, -4.5559,  2.0932,  4.4449, -2.1314,  4.5981]])
+ddpg = torch.tensor([[ 2.0435, -4.7151, -1.6177, -4.9960,  3.0137,  4.6096, -3.9075,  4.7502]])
 
 # initialTSCS, _ = env.getMetric(initial)
 # ddqnTSCS, _ = env.getMetric(ddqn)

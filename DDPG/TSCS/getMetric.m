@@ -3,8 +3,19 @@ function Q = getMetric(x, M, k0amax, k0amin, nfreq)
 a = 1;
 aa = 1;
 ha = aa/10;
-c_p = 5480;
-rho_sh = 8850;
+
+%Nickel
+%c_p = 5480;
+%rho_sh = 8850;
+
+%Copper
+%c_p = 4600;
+%rho_sh = 8900;
+
+%Titanium
+c_p = 5046.1;
+rho_sh = 4500;
+
 if max(size(gcp)) == 0 % parallel pool needed
 	parpool % create the parallel pool
 end
