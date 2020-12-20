@@ -1,42 +1,63 @@
+import matlab
 import matlab.engine
 import torch
+from torchvision import transforms
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from torchvision import transforms
 from PIL import Image
 import io
+import pathlib
+import json
+import numpy as np
 
-## 4 Cylinder TSCS
-class TSCSEnv():
-	"""docstring for TSCSEnv"""
-	def __init__(self, nCyl=4, k0amax=0.5, k0amin=0.3, nfreq=11):
+class BaseTSCSEnv():
+	"""docstring for BaseTSCSEnv"""
+	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		## Matlab interface
 		self.eng = matlab.engine.start_matlab()
-		self.eng.addpath('TSCS')
+		path = str(pathlib.Path(__file__).parent.absolute())
+		self.eng.addpath(path + '/objectiveFunctions')
 
 		## Hyperparameters
 		self.nCyl = nCyl
-		self.F = nfreq
+		self.F = nFreq
 		self.M = matlab.double([nCyl])
-		self.k0amax = matlab.double([k0amax])
-		self.k0amin = matlab.double([k0amin])
-		self.nfreq = matlab.double([nfreq])
+		self.kMax = matlab.double([kMax])
+		self.kMin = matlab.double([kMin])
+		self.nFreq = matlab.double([nFreq])
 
 		## State variables
 		self.config = None
 		self.TSCS = None
 		self.RMS = None
-		# self.img = None
 		self.counter = None
 
-		## Image transform
-		self.img_dim = 600
+		## Image
+		self.img_dim = (600, 600)
 		self.transform = transforms.Compose([
-			transforms.Resize((self.img_dim, self.img_dim)),
+			transforms.Resize(self.img_dim),
 			transforms.Grayscale(),
 			transforms.ToTensor()])
 
+		## General
+		self.ep_len = 100
 		self.grid_size = 5.0
+		self.observation_space = 2 * nCyl + nFreq + 2
+		self.stepSize = stepSize
+
+	def save_params(self, path):
+		env_params = {
+			'nCyl': self.nCyl,
+			'kMax': np.array(self.kMax).item(),
+			'kMin': np.array(self.kMin).item(),
+			'nFreq': self.F,
+			'ep_len': self.ep_len,
+			'grid_size': self.grid_size,
+			'stepSize': self.stepSize
+		}
+
+		with open(path + 'env_params.json', 'w') as f:
+			json.dump(env_params, f)
 
 	def validConfig(self, config):
 		"""
@@ -68,13 +89,6 @@ class TSCSEnv():
 			if self.validConfig(config):
 				break
 		return config
-
-	def getMetric(self, config):
-		x = self.eng.transpose(matlab.double(*config.tolist()))
-		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.k0amax, self.k0amin, self.nfreq)
-		tscs = torch.tensor(tscs).T
-		rms = tscs.pow(2).mean().sqrt().view(1,1)
-		return tscs, rms
 
 	def getIMG(self, config):
 		"""
@@ -114,6 +128,13 @@ class TSCSEnv():
 			reward += -1.0
 		return reward
 
+	def getMetric(self, config):
+		x = self.eng.transpose(matlab.double(*config.tolist()))
+		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
+		tscs = torch.tensor(tscs).T
+		rms = tscs.pow(2).mean().sqrt().view(1,1)
+		return tscs, rms
+
 	def reset(self):
 		"""
 		Generates starting config and calculates its tscs
@@ -121,8 +142,6 @@ class TSCSEnv():
 		self.config = self.getConfig()
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
-		# if list(self.TSCS.shape) == []:
-		# 	self.TSCS = self.TSCS.view(1, 1)
 		state = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float() 
 		return state
 
@@ -130,13 +149,11 @@ class TSCSEnv():
 		"""
 		Applys action to config
 		"""
-		return config + action
+		raise NotImplementedError
 
 	def step(self, action):
 		"""
-		If the config after applying the action is not valid
-		we revert back to previous state and give negative reward
-		otherwise, reward is calculated by the change in scattering
+		Updates the state of the environment with action. Returns next state, reward, done.
 		"""
 		prevConfig = self.config.clone()
 		nextConfig = self.getNextConfig(self.config.clone(), action)
@@ -148,24 +165,22 @@ class TSCSEnv():
 			self.config = prevConfig
 
 		self.TSCS, self.RMS = self.getMetric(self.config)
-		self.counter += 1/100
+		self.counter += 1/self.ep_len
 
 		reward = self.getReward(self.RMS, isValid)
-
-		# if list(self.TSCS.shape) == []:
-		# 	self.TSCS = self.TSCS.view(1, 1)
 
 		done = False
 		if int(self.counter.item()) == 1:
 			done = True
 			
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
-		return nextState, reward
+		return nextState, reward, done
 
 if __name__ == '__main__':
-	env = TSCSEnv(nCyl=1, k0amax=0.45, k0amin=0.35, nfreq=11)
-	env.reset()
-	env.config = torch.tensor([[0.0, 0.0, 3.0, 3.0]])
-	env.TSCS, env.RMS = env.getMetric(env.config)
-	env.counter = torch.tensor([[0.0]])
-	print(env.TSCS)
+	env = BaseTSCSEnv(4, 0.45, 0.35, 11, 0.5)
+
+	state = env.reset()
+
+	print(state)
+
+	env.step(2)

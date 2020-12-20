@@ -60,7 +60,7 @@ class DDPG():
 
 		self.numEpisodes = numEpisodes
 		self.epLen = epLen
-		self.saveEvery = 1000
+		self.saveEvery = 100
 		self.randomEpisodes = 100
 		self.learningBegins = 0
 
@@ -220,7 +220,7 @@ class DDPG():
 
 			## Save
 			if episode % self.saveEvery == 0:
-				path = 'savedModels/junkRun/'
+				path = 'savedModels/10cyl/'
 				torch.save(self.actor.state_dict(), path + f'actor{episode}.pt')
 				torch.save(self.critic.state_dict(), path + f'critic{episode}.pt')
 				torch.save(self.targetActor.state_dict(), path + f'targetActor{episode}.pt')
@@ -238,9 +238,9 @@ class DDPG():
 
 if __name__ == '__main__':
 	## env params
-	NCYL = 2
-	KMAX = .6
-	KMIN = .3
+	NCYL = 4
+	KMAX = .45
+	KMIN = .35
 	NFREQ = 11
 
 	# ddpg params
@@ -257,7 +257,7 @@ if __name__ == '__main__':
 	GAMMA 			= 0.90 		## How much to value future reward
 	TAU 			= 0.001 	## How much to update target network every step
 	EPSILON 		= 1.2		## Scale of random noise
-	DECAY_TIMESTEPS = 1000	 	## How slowly to reduce epsilon
+	DECAY_TIMESTEPS = 8000	 	## How slowly to reduce epsilon
 	EPS_END 		= 0.02 		## Lowest epsilon allowed
 	MEM_SIZE 		= 1_000_000	## How many samples in priority queue
 	MEM_ALPHA 		= 0.7 		## How much to use priority queue (0 = not at all, 1 = maximum)
