@@ -1,33 +1,31 @@
 from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
-from tscsRL.agents.ddpg import DDPGAgent, default_params
+from tscsRL.agents import ddpg
+from tscsRL import utils
 import imageio
 
+name = 'test_ddpg'
+
+path = 'results/' + name
+env_params = utils.jsonToDict(path + '/env_params.json')
+agent_params = utils.jsonToDict(path + '/agent_params.json')
+
 env = ContinuousTSCSEnv(
-	nCyl=2,
-	kMax=0.45,
-	kMin=0.35,
-	nFreq=11,
-	stepSize=0.5)
+	nCyl=env_params['nCyl'],
+	kMax=env_params['kMax'],
+	kMin=env_params['kMin'],
+	nFreq=env_params['nFreq'],
+	stepSize=env_params['stepSize'])
 
-params = default_params()
-params['save_every'] = 100
-params['decay_timesteps'] = 1000
-params['num_episodes'] = 1500
+agent_params['noise_scale'] = 0.02
 
-params['epsilon'] = 0.02
-
-name = 'test_agent'
-
-agent = DDPGAgent(
+agent = ddpg.DDPGAgent(
 	env.observation_space, 
 	env.action_space,
-	env.stepSize,
-	params,
+	agent_params,
 	name)
 
-agent.load_checkpoint('results/2cylRigidDDPG/checkpoints/', 1000)
-
-print(agent.epsilon)
+agent.load_checkpoint(path + '/checkpoints/', 100)
+print(agent.noise_scale)
 
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
 
@@ -48,7 +46,7 @@ while not done:
 	writer.append_data(img.view(env.img_dim).numpy())
 
 	action = agent.select_action(state)
-	nextState, reward, done = env.step(action)
+	nextState, reward, done, info = env.step(action)
 
 	print(reward, done)
 	state = nextState

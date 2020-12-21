@@ -11,9 +11,9 @@ env = DiscreteTSCSEnv(
 params = ddqn.default_params()
 params['save_every'] = 100
 params['decay_timesteps'] = 100
+params['num_episodes'] = 120
 params['eps_end'] = 0.05
 params['target_update'] = 10
-params['num_episodes'] = 120
 params['save_data'] = False
 params['use_wandb'] = True
 
