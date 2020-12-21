@@ -1,6 +1,5 @@
 from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
 from tscsRL.agents import ddpg
-import wandb
 
 env = ContinuousTSCSEnv(
 	nCyl=2,
@@ -15,8 +14,9 @@ params['decay_timesteps'] = 100
 params['num_episodes'] = 120
 params['noise_scale'] = 1.1
 params['save_data'] = False
+params['use_wandb'] = True
 
-name = 'test_run'
+name = 'test_run2'
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 
@@ -25,6 +25,4 @@ agent = ddpg.DDPGAgent(
 	params, 
 	name)
 
-logger = wandb.init(project='tscs', config=params, name=name)
-
-agent.learn(env, logger)
+agent.learn(env)

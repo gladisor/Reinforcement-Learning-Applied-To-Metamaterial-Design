@@ -6,6 +6,7 @@ from torch import tensor
 import torch.nn.functional as F
 from copy import deepcopy
 import numpy as np
+import wandb
 
 def default_params():
 	params = {
@@ -70,16 +71,15 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		self.noise_scale -= self.noise_decay_rate
 		self.noise_scale = max(self.noise_scale, self.params['noise_scale_end'])
 
-	def report(self, data, logger):
-		episode = data['episode']
-		initial = data['initial']
-		lowest = data['lowest']
-		final = data['final']
-		score = data['score']
-		data['noise_scale'] = self.noise_scale
+	def getLogger(self, config, name):
+		## Specify project name for wandb to store runs from this algorithm in
+		return wandb.init(project='tscs', config=config, name=name)
 
-		print(f'#:{episode}, I:{initial}, Lowest:{lowest}, F:{final}, Score:{score}, Exploration: {self.noise_scale}')
-		logger.log({'epsilon':self.noise_scale, 'lowest':lowest, 'score':score})
+	def report(self, data, logger):
+		data['noise_scale'] = self.noise_scale
+		print(data)
+		if self.params['use_wandb']:
+			logger.log(data)
 
 	def select_action(self, state):
 		with torch.no_grad():

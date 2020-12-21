@@ -45,6 +45,12 @@ class BaseTSCSEnv():
 		self.observation_space = 2 * nCyl + nFreq + 2
 		self.stepSize = stepSize
 
+		self.info = {
+			'initial': None,
+			'lowest': None,
+			'final': None,
+			'score': None}
+
 	def getParams(self):
 		env_params = {
 			'nCyl': self.nCyl,
@@ -141,6 +147,12 @@ class BaseTSCSEnv():
 		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
 		state = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float() 
+
+		## Log initial scattering at beginning of episode and reset score
+		self.info['initial'] = self.RMS.item()
+		self.info['lowest'] = self.info['initial']
+		self.info['final'] = None
+		self.info['score'] = 0
 		return state
 
 	def getNextConfig(self, config, action):
@@ -166,13 +178,22 @@ class BaseTSCSEnv():
 		self.counter += 1/self.ep_len
 
 		reward = self.getReward(self.RMS, isValid)
+		self.info['score'] += reward
 
 		done = False
 		if int(self.counter.item()) == 1:
 			done = True
 			
 		nextState = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
-		return nextState, reward, done
+
+		# Update current lowest scatter
+		current = self.RMS.item()
+		if current < self.info['lowest']:
+			self.info['lowest'] = current
+
+		self.info['final'] = current
+
+		return nextState, reward, done, self.info
 
 if __name__ == '__main__':
 	env = BaseTSCSEnv(4, 0.45, 0.35, 11, 0.5)

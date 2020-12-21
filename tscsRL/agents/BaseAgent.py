@@ -17,7 +17,8 @@ def default_params():
 		'save_every':500,
 		'random_episodes':0,
 		'learning_begins':0,
-		'save_data': False
+		'save_data': False,
+		'use_wandb': False
 	}
 	return params
 
@@ -68,10 +69,13 @@ class BaseAgent():
 	def finish_episode(self):
 		raise NotImplementedError
 
+	def getLogger(self):
+		raise NotImplementedError
+
 	def report(self, data, logger):
 		raise NotImplementedError
 
-	def learn(self, env, logger):
+	def learn(self, env):
 		path = 'results/' + self.run_name + '/'
 		checkpoint_path = path + 'checkpoints/'
 		data_path = path + 'data/'
@@ -80,9 +84,12 @@ class BaseAgent():
 		os.makedirs(path, exist_ok=False)
 		os.makedirs(checkpoint_path, exist_ok=True)
 
+		env_params = env.getParams()
 		## Save settings for env and agent at beginning of run
-		dictToJson(env.getParams(), path + 'env_params.json')
+		dictToJson(env_params, path + 'env_params.json')
 		dictToJson(self.params, path + 'agent_params.json')
+
+		run_params = {**env_params, **self.params}		
 
 		if self.params['save_data']:
 			os.makedirs(data_path, exist_ok=True)
@@ -94,15 +101,14 @@ class BaseAgent():
 			done_array = torch.zeros(array_size, 1)
 			array_index = 0
 
+		logger = None
+		if self.params['use_wandb']:
+			logger = self.getLogger(run_params, self.run_name)
+
 		for episode in range(self.params['num_episodes']):
 
 			## Reset environment to starting state
 			state = env.reset()
-			episode_reward = 0
-
-			## Log initial scattering at beginning of episode
-			initial = env.RMS.item()
-			lowest = initial
 
 			for t in tqdm(range(env.ep_len + 1), desc="train"):
 
@@ -112,13 +118,7 @@ class BaseAgent():
 				else:
 					action = self.random_action()
 
-				nextState, reward, done = env.step(action)
-				episode_reward += reward
-
-				# Update current lowest scatter
-				current = env.RMS.item()
-				if current < lowest:
-					lowest = current
+				nextState, reward, done, info = env.step(action)
 
 				## Cast reward and done as tensors
 				reward = tensor([[reward]]).float()
@@ -142,11 +142,11 @@ class BaseAgent():
 				if done:
 					break
 
-			## Print episode statistics to console
-			data = {'episode':episode, 'initial':initial, 'lowest':lowest, 'final':current, 'score':episode_reward}
+			## Send data to the report function which logs data and prints statistics about the algorithm and environment
+			data = {'episode': episode, **info}
 			self.report(data, logger)
 
-			## Save
+			## Saving model checkpoint and data
 			if episode % self.params['save_every'] == 0:
 				self.save_checkpoint(checkpoint_path, episode)
 

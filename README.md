@@ -4,12 +4,11 @@
 
 <p>Using deep reinforcement learning to design a broadband acoustic cloak.</p>
 
-<p>To train an agent in an environment. First create environment object</p>
+<p>Example usage:</p>
 
 ```
 from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
 from tscsRL.agents import ddpg
-import wandb
 
 env = ContinuousTSCSEnv(
 	nCyl=2,
@@ -24,6 +23,7 @@ params['decay_timesteps'] = 100
 params['num_episodes'] = 120
 params['noise_scale'] = 1.1
 params['save_data'] = False
+params['use_wandb'] = True
 
 name = 'example_run'
 
@@ -34,9 +34,7 @@ agent = ddpg.DDPGAgent(
 	params, 
 	name)
 
-logger = wandb.init(project='tscs', config=params, name=name)
-
-agent.learn(env, logger)	
+agent.learn(env)	
 ```
 
 <h3>DDPG diagram</h3>
