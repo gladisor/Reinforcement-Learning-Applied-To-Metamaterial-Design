@@ -1,4 +1,4 @@
-# Supression of Total Cross Sectional Scattering using Reinforcement Learning
+# Supression of Total Scattering Cross Section using Reinforcement Learning
 
 ## Description
 
