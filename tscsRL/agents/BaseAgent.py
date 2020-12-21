@@ -135,7 +135,7 @@ class BaseAgent():
 					done_array[array_index] = done
 					array_index += 1
 
-				## Preform bellman update
+				## Preform update
 				if episode > self.params['learning_begins']:
 					self.optimize_model()
 

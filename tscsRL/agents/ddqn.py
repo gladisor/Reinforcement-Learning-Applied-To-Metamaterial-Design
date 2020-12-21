@@ -17,6 +17,7 @@ def default_params():
 		'momentum': 0.9,
 		'eps_end': 0.05,
 		'decay_timesteps': 8000,
+		'target_update': 10,
 		'gamma': 0.9,
 		'batch_size': 64
 	}
@@ -52,6 +53,8 @@ class DDQNAgent(BaseAgent.BaseAgent):
 		self.epsilon = 1.0
 		self.eps_end = self.params['eps_end']
 		self.eps_decay_rate = (self.epsilon - self.eps_end) / self.params['decay_timesteps']
+
+		self.update_number = 0
 
 	def finish_episode(self):
 		self.epsilon -= self.eps_decay_rate
@@ -100,9 +103,7 @@ class DDQNAgent(BaseAgent.BaseAgent):
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-
 				target_q_values = r.to(self.device) + (1 - done.to(self.device)) * self.params['gamma'] * maxQ
-				td = target_q_values - current_q_values
 
 			## Calculate loss and backprop
 			loss = weights @ F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
@@ -110,8 +111,17 @@ class DDQNAgent(BaseAgent.BaseAgent):
 			loss.backward()
 			self.Qp.opt.step()
 
-			## Update priorities of sampled batch
-			self.memory.update_priorities(indices, torch.abs(td).detach())
+			## Updating priority of transition by last absolute td error
+			td = torch.abs(target_q_values - current_q_values).detach()
+			self.memory.update_priorities(indices, td + 1e-5)
+
+			## Copy over policy parameters to target net
+			if self.update_number % self.params['target_update'] == 0 and self.update_number != 0:
+				self.Qt.load_state_dict(self.Qp.state_dict())
+				## Reset update_number so we dont get an int overflow
+				self.update_number = 0
+			else:
+				self.update_number += 1
 
 	def save_checkpoint(self, path, episode):
 		torch.save(self.Qp.state_dict(), path + f'policy_net{episode}.pt')
