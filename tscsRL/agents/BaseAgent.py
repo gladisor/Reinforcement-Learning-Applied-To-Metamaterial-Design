@@ -1,11 +1,25 @@
 from collections import namedtuple
 from tscsRL.agents.memory import NaivePrioritizedBuffer
+from tscsRL.utils import dictToJson
 import torch
 from torch import tensor
 import os
 import json
 from tqdm import tqdm
 import wandb
+
+def default_params():
+	params = {
+		'mem_size': 1_000_000,
+		'mem_alpha': 0.7,
+		'mem_beta': 0.5,
+		'num_episodes':20_000,
+		'save_every':500,
+		'random_episodes':0,
+		'learning_begins':0,
+		'save_data': False
+	}
+	return params
 
 class BaseAgent():
 	"""docstring for BaseAgent"""
@@ -23,9 +37,6 @@ class BaseAgent():
 		self.Transition = namedtuple('Transition', ('s', 'a', 'r', 's_', 'done'))
 		self.memory = NaivePrioritizedBuffer(self.params['mem_size'], self.params['mem_alpha'])
 		self.mem_beta = self.params['mem_beta']
-
-		## Exploration rate
-		self.epsilon = self.params['epsilon']
 
 		## Name of run to save
 		self.run_name = run_name
@@ -54,12 +65,13 @@ class BaseAgent():
 	def load_checkpoint(self, path):
 		raise NotImplementedError
 
-	def decay_epsilon(self):
-		# self.epsilon *= self.epsDecay
-		self.epsilon -= (self.params['epsilon'] - self.params['eps_end']) / self.params['decay_timesteps']
-		self.epsilon = max(self.epsilon, self.params['eps_end'])
+	def finish_episode(self):
+		raise NotImplementedError
 
-	def learn(self, env):
+	def report(self, data, logger):
+		raise NotImplementedError
+
+	def learn(self, env, logger):
 		path = 'results/' + self.run_name + '/'
 		checkpoint_path = path + 'checkpoints/'
 		data_path = path + 'data/'
@@ -68,10 +80,9 @@ class BaseAgent():
 		os.makedirs(path, exist_ok=False)
 		os.makedirs(checkpoint_path, exist_ok=True)
 
-		env.save_params(path)
-
-		with open(path + 'agent_params.json', 'w') as f:
-			json.dump(self.params, f)
+		## Save settings for env and agent at beginning of run
+		dictToJson(env.getParams(), path + 'env_params.json')
+		dictToJson(self.params, path + 'agent_params.json')
 
 		if self.params['save_data']:
 			os.makedirs(data_path, exist_ok=True)
@@ -109,14 +120,9 @@ class BaseAgent():
 				if current < lowest:
 					lowest = current
 
-				if done:
-					done = 1
-				else:
-					done = 0
-
 				## Cast reward and done as tensors
 				reward = tensor([[reward]]).float()
-				done = tensor([[done]])
+				done = tensor([[1 if done == True else 0]])
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, action, reward, nextState, done))
@@ -133,11 +139,12 @@ class BaseAgent():
 					self.optimize_model()
 
 				state = nextState
+				if done:
+					break
 
 			## Print episode statistics to console
-			print(f'\n#:{episode}, I:{initial}, Lowest:{lowest}, F:{current}, Score:{episode_reward}, Epsilon: {self.epsilon}')
-
-			wandb.log({'epsilon':self.epsilon, 'lowest':lowest, 'score':episode_reward})
+			data = {'episode':episode, 'initial':initial, 'lowest':lowest, 'final':current, 'score':episode_reward}
+			self.report(data, logger)
 
 			## Save
 			if episode % self.params['save_every'] == 0:
@@ -152,4 +159,4 @@ class BaseAgent():
 
 			## Reduce exploration
 			if episode > self.params['random_episodes']:
-				self.decay_epsilon()
+				self.finish_episode()

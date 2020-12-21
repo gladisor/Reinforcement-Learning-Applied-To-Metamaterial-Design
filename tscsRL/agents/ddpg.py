@@ -1,4 +1,4 @@
-from tscsRL.agents.BaseAgent import BaseAgent
+from tscsRL.agents import BaseAgent
 from tscsRL.agents.models.ActorCritic import Actor, Critic
 
 import torch
@@ -18,24 +18,22 @@ def default_params():
 		'critic_wd':1e-2,
 		'gamma': 0.90,
 		'tau': 0.001,
-		'epsilon': 1.2,
+		'noise_scale': 1.2,
 		'decay_timesteps': 8000,
-		'eps_end': 0.02,
-		'mem_size':1_000_000,
-		'mem_alpha':0.7,
-		'mem_beta':0.5,
-		'batch_size':64,
-		'num_episodes':20_000,
-		'save_every':500,
-		'random_episodes':0,
-		'learning_begins':0,
-		'save_data': False}
+		'noise_scale_end': 0.02,
+		'batch_size': 64}
+
+	base_params = BaseAgent.default_params()
+
+	params.update(base_params)
 	return params
 
-class DDPGAgent(BaseAgent):
+class DDPGAgent(BaseAgent.BaseAgent):
 	"""docstring for DDPGAgent"""
 	def __init__(self, observation_space, action_space, stepSize, params, run_name):
 		super(DDPGAgent, self).__init__(observation_space, action_space, stepSize, params, run_name)
+
+		## Defining networks
 		self.actor = Actor(
 			observation_space, 
 			self.params['actor_n_hidden'],
@@ -52,9 +50,11 @@ class DDPGAgent(BaseAgent):
 			self.params['critic_lr'],
 			self.params['critic_wd'])
 
+		## Target networks
 		self.targetActor = deepcopy(self.actor)
 		self.targetCritic = deepcopy(self.critic)
 
+		## cuda:0 or cpu
 		self.device = self.actor.device
 
 		## Spaces
@@ -62,9 +62,28 @@ class DDPGAgent(BaseAgent):
 		self.action_space = action_space
 		self.stepSize = stepSize
 
+		## Noise decay rate
+		self.noise_scale = self.params['noise_scale']
+		self.noise_decay_rate = (self.params['noise_scale'] - self.params['noise_scale_end']) / self.params['decay_timesteps']
+
+	def finish_episode(self):
+		self.noise_scale -= self.noise_decay_rate
+		self.noise_scale = max(self.noise_scale, self.params['noise_scale_end'])
+
+	def report(self, data, logger):
+		episode = data['episode']
+		initial = data['initial']
+		lowest = data['lowest']
+		final = data['final']
+		score = data['score']
+		data['noise_scale'] = self.noise_scale
+
+		print(f'#:{episode}, I:{initial}, Lowest:{lowest}, F:{final}, Score:{score}, Exploration: {self.noise_scale}')
+		logger.log({'epsilon':self.noise_scale, 'lowest':lowest, 'score':score})
+
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, 1, size=(1, self.action_space)) * self.epsilon
+			noise = np.random.normal(0, 1, size=(1, self.action_space)) * self.noise_scale
 			action = self.actor(state).cpu() + noise
 			action.clamp_(-self.stepSize, self.stepSize)
 		return action

@@ -45,7 +45,7 @@ class BaseTSCSEnv():
 		self.observation_space = 2 * nCyl + nFreq + 2
 		self.stepSize = stepSize
 
-	def save_params(self, path):
+	def getParams(self):
 		env_params = {
 			'nCyl': self.nCyl,
 			'kMax': np.array(self.kMax).item(),
@@ -55,9 +55,7 @@ class BaseTSCSEnv():
 			'grid_size': self.grid_size,
 			'stepSize': self.stepSize
 		}
-
-		with open(path + 'env_params.json', 'w') as f:
-			json.dump(env_params, f)
+		return env_params
 
 	def validConfig(self, config):
 		"""
