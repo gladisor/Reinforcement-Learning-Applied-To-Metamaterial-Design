@@ -4,9 +4,13 @@
 
 Using deep reinforcement learning to design a broadband acoustic cloak.
 
-![DDPG agent diagram](images/DDPG.png)
+<p align="center">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png">
+</p>
 
-![DDQN agent diagram](images/DDQN.png)
+<p align="center">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png">
+</p>
 
 ## Credits
 Images:
