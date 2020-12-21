@@ -1,8 +1,8 @@
-# DDQN
+# Supression of Total Cross Sectional Scattering using Reinforcement Learning
 
 ## Description
 
-<p>Using deep reinforcement learning to design a broadband acoustic cloak.</p>
+<p>Using deep reinforcement learning to design a broadband acoustic cloak through inverse design</p>
 
 <p>Example usage:</p>
 
