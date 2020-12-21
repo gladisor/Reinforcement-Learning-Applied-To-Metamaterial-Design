@@ -24,12 +24,11 @@ def default_params():
 
 class BaseAgent():
 	"""docstring for BaseAgent"""
-	def __init__(self, observation_space, action_space, stepSize, params, run_name):
+	def __init__(self, observation_space, action_space, params, run_name):
 		super(BaseAgent, self).__init__()
 		## Environment info
 		self.observation_space = observation_space
 		self.action_space = action_space
-		self.stepSize = stepSize
 
 		## Hyperparameters
 		self.params = params
@@ -91,6 +90,7 @@ class BaseAgent():
 
 		run_params = {**env_params, **self.params}		
 
+		## Prepare to save data from run
 		if self.params['save_data']:
 			os.makedirs(data_path, exist_ok=True)
 			array_size = self.params['num_episodes'] * env.ep_len 
@@ -101,6 +101,7 @@ class BaseAgent():
 			done_array = torch.zeros(array_size, 1)
 			array_index = 0
 
+		## Initialize logger to track episode statistics
 		logger = None
 		if self.params['use_wandb']:
 			logger = self.getLogger(run_params, self.run_name)

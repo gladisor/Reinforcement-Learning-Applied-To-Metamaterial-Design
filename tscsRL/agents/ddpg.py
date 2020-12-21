@@ -20,19 +20,19 @@ def default_params():
 		'gamma': 0.90,
 		'tau': 0.001,
 		'noise_scale': 1.2,
+		'action_range': 0.5,
 		'decay_timesteps': 8000,
 		'noise_scale_end': 0.02,
 		'batch_size': 64}
 
 	base_params = BaseAgent.default_params()
-
 	params.update(base_params)
 	return params
 
 class DDPGAgent(BaseAgent.BaseAgent):
 	"""docstring for DDPGAgent"""
-	def __init__(self, observation_space, action_space, stepSize, params, run_name):
-		super(DDPGAgent, self).__init__(observation_space, action_space, stepSize, params, run_name)
+	def __init__(self, observation_space, action_space, params, run_name):
+		super(DDPGAgent, self).__init__(observation_space, action_space, params, run_name)
 
 		## Defining networks
 		self.actor = Actor(
@@ -40,7 +40,7 @@ class DDPGAgent(BaseAgent.BaseAgent):
 			self.params['actor_n_hidden'],
 			self.params['actor_h_size'],
 			action_space,
-			stepSize,
+			self.params['action_range'],
 			self.params['actor_lr'])
 
 		self.critic = Critic(
@@ -61,7 +61,7 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		## Spaces
 		self.observation_space = observation_space
 		self.action_space = action_space
-		self.stepSize = stepSize
+		self.action_range = self.params['action_range']
 
 		## Noise decay rate
 		self.noise_scale = self.params['noise_scale']
@@ -85,16 +85,15 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		with torch.no_grad():
 			noise = np.random.normal(0, 1, size=(1, self.action_space)) * self.noise_scale
 			action = self.actor(state).cpu() + noise
-			action.clamp_(-self.stepSize, self.stepSize)
+			action.clamp_(-self.action_range, self.action_range)
 		return action
 
 	def random_action(self):
 		action = np.random.uniform(
-			-self.stepSize, 
-			self.stepSize, 
+			-self.action_range, 
+			self.action_range, 
 			size=(1, self.action_space))
-		action = torch.tensor(action)
-		return action
+		return torch.tensor(action)
 
 	def soft_update(self, target, source):
 		for target_param, param in zip(target.parameters(), source.parameters()):
