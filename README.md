@@ -22,15 +22,15 @@ params['save_every'] = 100
 params['decay_timesteps'] = 100
 params['num_episodes'] = 120
 params['noise_scale'] = 1.1
+params['action_range'] = env.stepSize
 params['save_data'] = False
 params['use_wandb'] = True
 
-name = 'example_run'
+name = 'test_ddpg'
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 
 	env.action_space, 
-	env.stepSize, 
 	params, 
 	name)
 
