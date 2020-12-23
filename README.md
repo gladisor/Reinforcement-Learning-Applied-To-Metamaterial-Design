@@ -6,7 +6,7 @@
 
 * [Youtube video](https://www.youtube.com/watch?v=K_QukLcNlUM&feature=emb_logo)
 
-<p>This is a video of the DDPG algorithm controling the positioning of 4 cylinder to a configuration which produces low TSCS.</p>
+<p>This is an episode of the trained DDPG algorithm controling the positioning of 4 cylinder to a configuration which produces low TSCS. This algorithm was trained for 8000 episodes, to minimize the root mean square (RMS) of TSCS across a range of wavenumbers from 0.45-0.35 ka.</p>
 <p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddpg4cyl0.45-0.35-8000decay.gif">
 </p>
@@ -46,8 +46,8 @@ agent.learn(env)
 
 <h3>Diagrams of training loops:</h3>
 <p align="center">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="400" style="border:5px solid black">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="400" style="border:5px solid black">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="400">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="400">
 </p>
 
 ## Credits
