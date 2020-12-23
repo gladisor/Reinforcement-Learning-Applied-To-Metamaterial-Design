@@ -4,6 +4,11 @@
 
 <p>Using deep reinforcement learning to design a broadband acoustic cloak through inverse design</p>
 
+<h3>Optimal control</h3>
+<p align="center">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddpg4cyl0.45-0.35-8000decay.gif">
+</p>
+
 <p>Example usage:</p>
 
 ```
