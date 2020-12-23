@@ -16,7 +16,7 @@
 ## Example usage
 
 ```
-from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
+from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv
 from tscsRL.agents import ddpg
 
 env = ContinuousTSCSEnv(
