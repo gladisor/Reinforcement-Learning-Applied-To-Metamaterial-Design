@@ -2,8 +2,9 @@
 
 <p>Our aim in this research is to use reinforcement learning to design a broadband acoustic cloak through inverse design. For more information on the project you can view our presentations:</p>
 
-![MLSE 2020 Submission](https://www.mlse2020.com/posters/engineering-7)
-![Youtube video](https://www.youtube.com/watch?v=K_QukLcNlUM&feature=emb_logo)
+[MLSE 2020 Submission](https://www.mlse2020.com/posters/engineering-7)
+
+[Youtube video](https://www.youtube.com/watch?v=K_QukLcNlUM&feature=emb_logo)
 
 <h3>Optimal control</h3>
 <p align="center">
