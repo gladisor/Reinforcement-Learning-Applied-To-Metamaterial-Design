@@ -1,15 +1,13 @@
 # Supression of Total Scattering Cross Section using Reinforcement Learning
 
-## Description
-
-<p>Using deep reinforcement learning to design a broadband acoustic cloak through inverse design</p>
+<p>Our aim in this research is to use reinforcement learning to design a broadband acoustic cloak through inverse design</p>
 
 <h3>Optimal control</h3>
 <p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddpg4cyl0.45-0.35-8000decay.gif">
 </p>
 
-<p>Example usage:</p>
+<h3>Example usage:</h3>
 
 ```
 from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
@@ -47,11 +45,6 @@ agent.learn(env)
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="400">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="400">
 </p>
-
-<!-- <h3>DDQN diagram</h3>
-<p align="center">
-	
-</p> -->
 
 ## Credits
 Images:
