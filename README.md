@@ -6,7 +6,7 @@
 
 * [Youtube video](https://www.youtube.com/watch?v=K_QukLcNlUM&feature=emb_logo)
 
-<h3>Optimal control</h3>
+<p>This is a video of the DDPG algorithm controling the positioning of 4 cylinder to a configuration which produces low TSCS.</p>
 <p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddpg4cyl0.45-0.35-8000decay.gif">
 </p>
