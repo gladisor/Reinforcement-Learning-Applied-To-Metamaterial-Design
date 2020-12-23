@@ -1,15 +1,17 @@
 from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv
+from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv
 from tscsRL.agents import ddpg
 from tscsRL import utils
 import imageio
 
-name = 'ddpg4cyl0.45-0.35-8000decay'
+# name = 'ddpg4cyl0.45-0.35-8000decay'
+name = 'ddpgGradient4cyl0.45-0.35-8000decay'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
 agent_params = utils.jsonToDict(path + '/agent_params.json')
 
-env = ContinuousTSCSEnv(
+env = ContinuousGradientTSCSEnv(
 	nCyl=env_params['nCyl'],
 	kMax=env_params['kMax'],
 	kMin=env_params['kMin'],
