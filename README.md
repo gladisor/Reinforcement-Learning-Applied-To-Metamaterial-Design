@@ -44,8 +44,8 @@ agent.learn(env)
 
 <h3>Diagrams of training loops</h3>
 <p align="center">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="100">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="100">
 </p>
 
 <!-- <h3>DDQN diagram</h3>
