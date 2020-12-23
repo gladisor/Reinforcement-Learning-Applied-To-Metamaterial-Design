@@ -1,4 +1,4 @@
-from tscsRL.environments.DiscreteTSCSEnv import DiscreteTSCSEnv
+from tscsRL.environments.TSCSEnv import DiscreteTSCSEnv
 from tscsRL.agents import ddqn
 
 env = DiscreteTSCSEnv(

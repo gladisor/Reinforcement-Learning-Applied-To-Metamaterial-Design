@@ -74,7 +74,8 @@ class BaseTSCSEnv():
 
 			coords = config.view(self.nCyl, 2)
 			for i in range(self.nCyl):
-				for j in range(self.nCyl):
+				for j in range(i, self.nCyl): # O((n-1) + (n-2) + ... + 1) Runtime complexity
+				# for j in range(self.nCyl): # O(n(n-1)) Runtime complexity
 					if i != j:
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
@@ -132,21 +133,31 @@ class BaseTSCSEnv():
 			reward += -1.0
 		return reward
 
-	def getMetric(self, config):
+	# def getMetric(self, config):
+	# 	x = self.eng.transpose(matlab.double(*config.tolist()))
+	# 	tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
+	# 	tscs = torch.tensor(tscs).T
+	# 	rms = tscs.pow(2).mean().sqrt().view(1,1)
+	# 	return tscs, rms
+
+	def setMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
 		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
-		tscs = torch.tensor(tscs).T
-		rms = tscs.pow(2).mean().sqrt().view(1,1)
-		return tscs, rms
+		self.TSCS = torch.tensor(tscs).T
+		self.RMS = self.TSCS.pow(2).mean().sqrt().view(1,1)
+
+	def getState(self):
+		state = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
+		return state
 
 	def reset(self):
 		"""
 		Generates starting config and calculates its tscs
 		"""
 		self.config = self.getConfig()
-		self.TSCS, self.RMS = self.getMetric(self.config)
 		self.counter = torch.tensor([[0.0]])
-		state = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float() 
+		self.setMetric(self.config)
+		state = self.getState()
 
 		## Log initial scattering at beginning of episode and reset score
 		self.info['initial'] = self.RMS.item()
@@ -174,8 +185,9 @@ class BaseTSCSEnv():
 		else: ## Invalid next state, do not change state variables
 			self.config = prevConfig
 
-		self.TSCS, self.RMS = self.getMetric(self.config)
+		self.setMetric(self.config)
 		self.counter += 1/self.ep_len
+		nextState = self.getState()
 
 		reward = self.getReward(self.RMS, isValid)
 		self.info['score'] += reward
@@ -184,8 +196,6 @@ class BaseTSCSEnv():
 		if int(self.counter.item()) == 1:
 			done = True
 			
-		nextState = torch.cat([self.config, self.TSCS, self.RMS, self.counter], dim=-1).float()
-
 		# Update current lowest scatter
 		current = self.RMS.item()
 		if current < self.info['lowest']:
@@ -194,6 +204,46 @@ class BaseTSCSEnv():
 		self.info['final'] = current
 
 		return nextState, reward, done, self.info
+
+class ContinuousTSCSEnv(BaseTSCSEnv):
+	"""docstring for ContinuousTSCSEnv"""
+	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
+		super(ContinuousTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
+
+		## Dimention of action space
+		self.action_space = 2 * self.nCyl
+
+	def getNextConfig(self, config, action):
+		"""
+		Applys continuous action to config
+		"""
+		return config + action
+
+class DiscreteTSCSEnv(BaseTSCSEnv):
+	"""docstring for DiscreteTSCSEnv"""
+	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
+		super(DiscreteTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
+
+		## Dimention of action space
+		self.action_space = 4 * self.nCyl
+
+	def getNextConfig(self, config, action):
+		"""
+		Applys action to config
+		"""
+		coords = config.view(self.nCyl, 2)
+		cyl = int(action/4)
+		direction = action % 4
+		if direction == 0:
+			coords[cyl, 0] -= self.stepSize
+		if direction == 1:
+			coords[cyl, 1] += self.stepSize
+		if direction == 2:
+			coords[cyl, 0] += self.stepSize
+		if direction == 3:
+			coords[cyl, 1] -= self.stepSize
+		nextConfig = coords.view(1, 2 * self.nCyl)
+		return nextConfig
 
 if __name__ == '__main__':
 	env = BaseTSCSEnv(4, 0.45, 0.35, 11, 0.5)

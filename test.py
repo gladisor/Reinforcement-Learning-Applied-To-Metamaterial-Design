@@ -1,9 +1,9 @@
-from tscsRL.environments.ContinuousTSCSEnv import ContinuousTSCSEnv
+from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv
 from tscsRL.agents import ddpg
 from tscsRL import utils
 import imageio
 
-name = 'test_ddpg'
+name = 'ddpg4cyl0.45-0.35-8000decay'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
@@ -24,7 +24,7 @@ agent = ddpg.DDPGAgent(
 	agent_params,
 	name)
 
-agent.load_checkpoint(path + '/checkpoints/', 100)
+agent.load_checkpoint(path + '/checkpoints/', 8000)
 print(agent.noise_scale)
 
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
