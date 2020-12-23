@@ -42,15 +42,16 @@ agent = ddpg.DDPGAgent(
 agent.learn(env)	
 ```
 
-<h3>DDPG diagram</h3>
+<h3>Diagrams of training loops</h3>
 <p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png">
-</p>
-
-<h3>DDQN diagram</h3>
-<p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png">
 </p>
+
+<!-- <h3>DDQN diagram</h3>
+<p align="center">
+	
+</p> -->
 
 ## Credits
 Images:
