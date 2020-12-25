@@ -25,7 +25,7 @@ params['action_range'] = env.stepSize
 params['save_data'] = False
 params['use_wandb'] = False
 
-name = 'test_speedup'
+name = 'test_1'
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 

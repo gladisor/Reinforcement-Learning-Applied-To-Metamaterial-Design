@@ -31,6 +31,7 @@ class BaseTSCSEnv():
 		self.TSCS = None
 		self.RMS = None
 		self.counter = None
+		self.gradient = None
 
 		## Image
 		self.img_dim = (600, 600)
@@ -129,8 +130,19 @@ class BaseTSCSEnv():
 		proporitional to how close it is to zero
 		"""
 		reward = -RMS.item()
+		reward_grad = 0
 		if not isValid:
-			reward += -1.0
+			reward += -5.0
+
+		if self.gradient is not None:
+			gradient = self.gradient.view(int(torch.Tensor(self.M)), 2)
+			for i in range(int(torch.Tensor(self.M))):
+				grad_norm = torch.sqrt(gradient[i, 0] ** 2 + gradient[i, 1] ** 2)
+				reward_grad += - grad_norm * RMS.item()
+		reward_grad = reward_grad / int(torch.Tensor(self.M))
+
+		reward += reward_grad
+
 		return reward
 
 	# def getMetric(self, config):

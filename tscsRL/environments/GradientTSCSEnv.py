@@ -7,8 +7,6 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(BaseGradientTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
-		## New state variable
-		self.gradient = None
 
 		## Observation space changes from 2 * nCyl to 4 * nCyl due to additional gradient info
 		self.observation_space = 4 * nCyl + nFreq + 2
