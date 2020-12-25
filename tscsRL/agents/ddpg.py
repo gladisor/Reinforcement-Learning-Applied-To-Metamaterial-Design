@@ -20,7 +20,6 @@ def default_params():
 		'gamma': 0.90,
 		'tau': 0.001,
 		'noise_scale': 1.2,
-		'action_range': 0.5,
 		'decay_timesteps': 8000,
 		'noise_scale_end': 0.02,
 		'batch_size': 64}
@@ -33,21 +32,26 @@ class DDPGAgent(BaseAgent.BaseAgent):
 	"""docstring for DDPGAgent"""
 	def __init__(self, observation_space, action_space, params, run_name):
 		super(DDPGAgent, self).__init__(observation_space, action_space, params, run_name)
+		## Spaces
+		# self.action_range = self.params['action_range']
+		self.action_high = torch.tensor(self.action_space.high)
+		self.action_low = torch.tensor(self.action_space.low)
+		action_range = (self.action_high - self.action_low)/2
 
 		## Defining networks
 		self.actor = Actor(
-			observation_space, 
+			self.observation_dim, 
 			self.params['actor_n_hidden'],
 			self.params['actor_h_size'],
-			action_space,
-			self.params['action_range'],
+			self.action_dim,
+			action_range,
 			self.params['actor_lr'])
 
 		self.critic = Critic(
-			observation_space,
+			self.observation_dim,
 			self.params['critic_n_hidden'],
 			self.params['critic_h_size'],
-			action_space,
+			self.action_dim,
 			self.params['critic_lr'],
 			self.params['critic_wd'])
 
@@ -57,11 +61,6 @@ class DDPGAgent(BaseAgent.BaseAgent):
 
 		## cuda:0 or cpu
 		self.device = self.actor.device
-
-		## Spaces
-		self.observation_space = observation_space
-		self.action_space = action_space
-		self.action_range = self.params['action_range']
 
 		## Noise decay rate
 		self.noise_scale = self.params['noise_scale']
@@ -83,17 +82,14 @@ class DDPGAgent(BaseAgent.BaseAgent):
 
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, 1, size=(1, self.action_space)) * self.noise_scale
+			noise = np.random.normal(0, 1, size=self.action_space.shape) * self.noise_scale
 			action = self.actor(state).cpu() + noise
-			action.clamp_(-self.action_range, self.action_range)
+			# action.clamp_(self.action_space.low, self.action_space.high)
+			action = torch.max(torch.min(action, self.action_high), self.action_low)
 		return action
 
 	def random_action(self):
-		action = np.random.uniform(
-			-self.action_range, 
-			self.action_range, 
-			size=(1, self.action_space))
-		return torch.tensor(action)
+		return torch.tensor(self.action_space.sample())
 
 	def soft_update(self, target, source):
 		for target_param, param in zip(target.parameters(), source.parameters()):

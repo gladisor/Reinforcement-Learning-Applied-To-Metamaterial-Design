@@ -34,20 +34,16 @@ class DDQNAgent(BaseAgent.BaseAgent):
 		## Defining networks
 
 		self.Qp = DQN(
-			observation_space,
+			self.observation_dim,
 			self.params['h_size'],
 			self.params['n_hidden'],
-			action_space,
+			self.action_space.n,
 			self.params['lr'])
 
 		self.Qt = deepcopy(self.Qp)
 
 		## cuda:0 or cpu
 		self.device = self.Qp.device
-
-		## Spaces
-		self.observation_space = observation_space
-		self.action_space = action_space
 
 		## Epsilon
 		self.epsilon = 1.0
@@ -78,11 +74,11 @@ class DDQNAgent(BaseAgent.BaseAgent):
 				action = torch.argmax(self.Qp(state), dim=-1).item()
 		else:
 			## Explore
-			action = np.random.randint(self.action_space)
+			action = np.random.randint(self.action_space.n)
 		return torch.tensor([[action]])
 
 	def random_action(self):
-		return torch.tensor([[np.random.randint(self.action_space)]])
+		return torch.tensor([[np.random.randint(self.action_space.n)]])
 
 	def optimize_model(self):
 		"""
@@ -103,7 +99,7 @@ class DDQNAgent(BaseAgent.BaseAgent):
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-				target_q_values = r.to(self.device) + (1 - done.to(self.device)) * self.params['gamma'] * maxQ
+				target_q_values = r.to(self.device) + (1.0 - done.to(self.device)) * self.params['gamma'] * maxQ
 
 			## Calculate loss and backprop
 			loss = weights @ F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')

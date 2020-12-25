@@ -5,19 +5,22 @@ import torch.nn as nn
 class Actor(nn.Module):
 	def __init__(self, inSize, nHidden, hSize, nActions, actionRange, lr):
 		super(Actor, self).__init__()
+		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+		
+		## Specifying action info
 		self.nActions = nActions
-		self.actionRange = actionRange
-		self.fc = nn.Linear(inSize, hSize)
+		self.actionRange = actionRange.to(self.device)
 
+		## Defining network archetecture
+		self.fc = nn.Linear(inSize, hSize)
 		self.layers = nn.ModuleList()
 		self.norms = nn.ModuleList()
 		for _ in range(nHidden):
 			self.layers.append(nn.Linear(hSize, hSize))
 			self.norms.append(nn.LayerNorm(hSize))
-
 		self.mu = nn.Linear(hSize, nActions)
 
-		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+		## Sending parameters to device and creating optimizer
 		self.to(self.device)
 		self.opt = torch.optim.Adam(self.parameters(), lr=lr)
 

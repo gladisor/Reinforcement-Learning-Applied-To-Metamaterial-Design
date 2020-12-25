@@ -17,7 +17,7 @@ params['target_update'] = 10
 params['save_data'] = False
 params['use_wandb'] = True
 
-name = 'test_ddqn_fixed'
+name = 'ddqnADAM2cyltest'
 
 agent = ddqn.DDQNAgent(
 	env.observation_space, 

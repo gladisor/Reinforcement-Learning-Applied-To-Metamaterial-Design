@@ -2,11 +2,12 @@ from collections import namedtuple
 from tscsRL.agents.memory import NaivePrioritizedBuffer
 from tscsRL.utils import dictToJson
 import torch
-from torch import tensor
 import os
 import json
 from tqdm import tqdm
 import wandb
+from math import prod
+import gym
 
 def default_params():
 	params = {
@@ -29,6 +30,15 @@ class BaseAgent():
 		## Environment info
 		self.observation_space = observation_space
 		self.action_space = action_space
+		
+		self.observation_dim = prod(observation_space.shape)
+
+		if isinstance(self.action_space, gym.spaces.Box):
+			self.action_dim = prod(self.action_space.shape)
+		elif isinstance(self.action_space, gym.spaces.Discrete):
+			self.action_dim = 1
+		else:
+			print('Unrecognized action space')
 
 		## Hyperparameters
 		self.params = params
@@ -94,10 +104,10 @@ class BaseAgent():
 		if self.params['save_data']:
 			os.makedirs(data_path, exist_ok=True)
 			array_size = self.params['num_episodes'] * env.ep_len 
-			state_array = torch.zeros(array_size, self.observation_space)
-			action_array = torch.zeros(array_size, self.action_space)
+			state_array = torch.zeros(array_size, self.observation_dim)
+			action_array = torch.zeros(array_size, self.action_dim)
 			reward_array = torch.zeros(array_size, 1)
-			next_state_array = torch.zeros(array_size, self.observation_space)
+			next_state_array = torch.zeros(array_size, self.observation_dim)
 			done_array = torch.zeros(array_size, 1)
 			array_index = 0
 
@@ -122,8 +132,8 @@ class BaseAgent():
 				nextState, reward, done, info = env.step(action)
 
 				## Cast reward and done as tensors
-				reward = tensor([[reward]]).float()
-				done = tensor([[1 if done == True else 0]])
+				reward = torch.tensor([[reward]]).float()
+				done = torch.tensor([[1 if done == True else 0]])
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, action, reward, nextState, done))
