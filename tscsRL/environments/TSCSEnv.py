@@ -129,7 +129,7 @@ class BaseTSCSEnv():
 		Computes reward based on change in scattering 
 		proporitional to how close it is to zero
 		"""
-		reward = -RMS.item()
+		reward = -2 * RMS.item()
 		reward_grad = 0
 		if not isValid:
 			reward += -5.0
