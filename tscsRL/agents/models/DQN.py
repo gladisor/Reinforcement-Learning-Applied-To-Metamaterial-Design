@@ -14,8 +14,8 @@ class DQN(nn.Module):
 
 		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 		self.to(self.device)
-		# self.opt = torch.optim.SGD(self.parameters(), lr=lr, momentum=0.9)
-		self.opt = torch.optim.Adam(self.parameters(), lr=lr)
+		self.opt = torch.optim.SGD(self.parameters(), lr=lr, momentum=0.9)
+		# self.opt = torch.optim.Adam(self.parameters(), lr=lr)
 
 	def forward(self, x):
 		x = x.to(self.device)

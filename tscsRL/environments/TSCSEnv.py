@@ -80,8 +80,8 @@ class BaseTSCSEnv(gym.Env):
 
 			coords = config.view(self.nCyl, 2)
 			for i in range(self.nCyl):
-				for j in range(i, self.nCyl): # O((n-1) + (n-2) + ... + 1) Runtime complexity
-				# for j in range(self.nCyl): # O(n(n-1)) Runtime complexity
+				# for j in range(i, self.nCyl): # O((n-1) + (n-2) + ... + 1) Runtime complexity
+				for j in range(self.nCyl): # O(n(n-1)) Runtime complexity
 					if i != j:
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
