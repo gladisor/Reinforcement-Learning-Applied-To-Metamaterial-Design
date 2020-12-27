@@ -1,6 +1,8 @@
 from tscsRL.environments.TSCSEnv import BaseTSCSEnv, ContinuousTSCSEnv, DiscreteTSCSEnv
 import matlab
 import torch
+import numpy as np
+import gym
 
 class BaseGradientTSCSEnv(BaseTSCSEnv):
 	"""docstring for BaseGradientTSCSEnv"""
@@ -11,7 +13,11 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 		self.gradient = None
 
 		## Observation space changes from 2 * nCyl to 4 * nCyl due to additional gradient info
-		self.observation_space = 4 * nCyl + nFreq + 2
+		# self.observation_space = 4 * nCyl + nFreq + 2
+		self.observation_space = gym.spaces.Box(
+			low=-np.inf,
+			high=np.inf,
+			shape=(1, 4 * nCyl + nFreq + 2))
 
 	def setMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
@@ -23,6 +29,14 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 	def getState(self):
 		state = torch.cat([self.config, self.TSCS, self.RMS, self.gradient, self.counter], dim=-1).float()
 		return state
+
+	# def getReward(self, RMS, isValid):
+	# 	norm = torch.linalg.norm(self.gradient)
+	# 	gradient_penalty = torch.exp(-norm) * RMS.item() * 0.5
+	# 	reward = -RMS.item() - gradient_penalty
+	# 	if not isValid:
+	# 		reward += -1.0
+	# 	return reward
 
 class ContinuousGradientTSCSEnv(BaseGradientTSCSEnv, ContinuousTSCSEnv):
 	"""docstring for ContinuousGradientTSCSEnv"""

@@ -10,20 +10,18 @@ import wandb
 
 def default_params():
 	params = {
-		'actor_n_hidden': 2,
-		'actor_h_size': 128,
-		'actor_lr': 1e-4,
-		'critic_n_hidden': 8,
-		'critic_h_size': 128,
-		'critic_lr':1e-3,
-		'critic_wd':1e-2,
-		'gamma': 0.90,
-		'tau': 0.001,
-		'noise_scale': 1.2,
-		'action_range': 0.5,
-		'decay_timesteps': 8000,
-		'noise_scale_end': 0.02,
-		'batch_size': 64}
+		'actor_n_hidden': 2,		## Layers in actor network
+		'actor_h_size': 128,		## Neurons in actor network
+		'actor_lr': 1e-4,			## Learning rate of actor network
+		'critic_n_hidden': 8,		## Layers in critic network
+		'critic_h_size': 128,		## Neurons in critic network
+		'critic_lr':1e-3,			## Learning rate of critic network
+		'critic_wd':1e-2,			## Weight decay of critic network
+		'tau': 0.001,				## Rate at which the target networks track the base networks
+		'noise_scale': 1.2,			## Scale of N(0, 1) noise to apply to action
+		'decay_timesteps': 8000,	## Rate at which the noise scale drops to the minimum
+		'noise_scale_end': 0.02		## Minimum noise scale rate
+		}
 
 	base_params = BaseAgent.default_params()
 	params.update(base_params)
@@ -33,21 +31,29 @@ class DDPGAgent(BaseAgent.BaseAgent):
 	"""docstring for DDPGAgent"""
 	def __init__(self, observation_space, action_space, params, run_name):
 		super(DDPGAgent, self).__init__(observation_space, action_space, params, run_name)
+		## Spaces
+		self.action_high = torch.tensor(self.action_space.high)
+		self.action_low = torch.tensor(self.action_space.low)
+		## Note: Does not support action range which is not symmetrical around 0
+		self.action_range = (self.action_high - self.action_low)/2
+
+		## Hyperparameters
+		self.tau = self.params['tau']
 
 		## Defining networks
 		self.actor = Actor(
-			observation_space, 
+			self.observation_dim, 
 			self.params['actor_n_hidden'],
 			self.params['actor_h_size'],
-			action_space,
-			self.params['action_range'],
+			self.action_dim,
+			self.action_range,
 			self.params['actor_lr'])
 
 		self.critic = Critic(
-			observation_space,
+			self.observation_dim,
 			self.params['critic_n_hidden'],
 			self.params['critic_h_size'],
-			action_space,
+			self.action_dim,
 			self.params['critic_lr'],
 			self.params['critic_wd'])
 
@@ -58,18 +64,14 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		## cuda:0 or cpu
 		self.device = self.actor.device
 
-		## Spaces
-		self.observation_space = observation_space
-		self.action_space = action_space
-		self.action_range = self.params['action_range']
-
-		## Noise decay rate
+		## Noise
 		self.noise_scale = self.params['noise_scale']
-		self.noise_decay_rate = (self.params['noise_scale'] - self.params['noise_scale_end']) / self.params['decay_timesteps']
+		self.noise_scale_end = self.params['noise_scale_end']
+		self.noise_decay_rate = (self.noise_scale - self.noise_scale_end) / self.params['decay_timesteps']
 
 	def finish_episode(self):
 		self.noise_scale -= self.noise_decay_rate
-		self.noise_scale = max(self.noise_scale, self.params['noise_scale_end'])
+		self.noise_scale = max(self.noise_scale, self.noise_scale_end)
 
 	def getLogger(self, config, name):
 		## Specify project name for wandb to store runs from this algorithm in
@@ -83,32 +85,30 @@ class DDPGAgent(BaseAgent.BaseAgent):
 
 	def select_action(self, state):
 		with torch.no_grad():
-			noise = np.random.normal(0, 1, size=(1, self.action_space)) * self.noise_scale
+			noise = np.random.normal(0, 1, size=self.action_space.shape) * self.noise_scale
 			action = self.actor(state).cpu() + noise
-			action.clamp_(-self.action_range, self.action_range)
+			action = torch.max(torch.min(action, self.action_high), self.action_low)
 		return action
 
 	def random_action(self):
-		action = np.random.uniform(
-			-self.action_range, 
-			self.action_range, 
-			size=(1, self.action_space))
-		return torch.tensor(action)
+		return torch.tensor(self.action_space.sample())
 
 	def soft_update(self, target, source):
 		for target_param, param in zip(target.parameters(), source.parameters()):
-			target_param.data.copy_(target_param.data * (1.0 - self.params['tau']) + param.data * self.params['tau'])
+			target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
 	def optimize_model(self):
-		if self.memory.can_provide_sample(self.params['batch_size']):
+		if self.memory.can_provide_sample(self.batch_size):
 			## Get data from memory
-			batch, indices, weights = self.memory.sample(self.params['batch_size'], self.mem_beta)
+			batch, indices, weights = self.memory.sample(self.batch_size, self.mem_beta)
 			s, a, r, s_, done = self.extract_tensors(batch)
+			r = r.to(self.device)
+			done = done.to(self.device)
 			weights = tensor([weights]).to(self.device)
 
 			## Compute target
 			maxQ = self.targetCritic(s_, self.targetActor(s_).detach())
-			target_q = r.to(self.device) + (1.0 - done.to(self.device)) * self.params['gamma'] * maxQ
+			target_q = r + (1.0 - done) * self.gamma * maxQ
 
 			## Update the critic network
 			self.critic.opt.zero_grad()

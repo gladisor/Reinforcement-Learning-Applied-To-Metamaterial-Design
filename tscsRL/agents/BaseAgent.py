@@ -2,23 +2,26 @@ from collections import namedtuple
 from tscsRL.agents.memory import NaivePrioritizedBuffer
 from tscsRL.utils import dictToJson
 import torch
-from torch import tensor
 import os
 import json
 from tqdm import tqdm
 import wandb
+from math import prod
+import gym
 
 def default_params():
 	params = {
-		'mem_size': 1_000_000,
-		'mem_alpha': 0.7,
-		'mem_beta': 0.5,
-		'num_episodes':20_000,
-		'save_every':500,
-		'random_episodes':0,
-		'learning_begins':0,
-		'save_data': False,
-		'use_wandb': False
+		'gamma': 0.9,			## Valuation of future reward [1, 0]
+		'batch_size': 64,		## Number of samples per gradient update
+		'mem_size': 1_000_000,	## Maximum datapoints to store in queue
+		'mem_alpha': 0.7,		## How much to use priority queue [1, 0]
+		'mem_beta': 0.5,		## How agressivly to apply importance sampling
+		'num_episodes':20_000,	## Number of episodes to train for
+		'save_every':500,		## Save checkpoint every
+		'random_episodes':0,	## Number of episodes to only select random actions
+		'learning_begins':0,	## Delay learning by this many episodes
+		'save_data': False,		## Save s, a, r, s_, done transitions?
+		'use_wandb': False		## Log data to weights and biases logger
 	}
 	return params
 
@@ -29,9 +32,25 @@ class BaseAgent():
 		## Environment info
 		self.observation_space = observation_space
 		self.action_space = action_space
+		
+		"""
+		This bit of code is ugly but nescesary for getting the dimention of
+		the action and observation space for data saving. We can make this
+		nicer in future versions.
+		"""
+		self.observation_dim = prod(observation_space.shape)
+
+		if isinstance(self.action_space, gym.spaces.Box):
+			self.action_dim = prod(self.action_space.shape)
+		elif isinstance(self.action_space, gym.spaces.Discrete):
+			self.action_dim = 1
+		else:
+			print('Unrecognized action space')
 
 		## Hyperparameters
 		self.params = params
+		self.gamma = params['gamma']
+		self.batch_size = params['batch_size']
 
 		## Memory
 		self.Transition = namedtuple('Transition', ('s', 'a', 'r', 's_', 'done'))
@@ -94,10 +113,10 @@ class BaseAgent():
 		if self.params['save_data']:
 			os.makedirs(data_path, exist_ok=True)
 			array_size = self.params['num_episodes'] * env.ep_len 
-			state_array = torch.zeros(array_size, self.observation_space)
-			action_array = torch.zeros(array_size, self.action_space)
+			state_array = torch.zeros(array_size, self.observation_dim)
+			action_array = torch.zeros(array_size, self.action_dim)
 			reward_array = torch.zeros(array_size, 1)
-			next_state_array = torch.zeros(array_size, self.observation_space)
+			next_state_array = torch.zeros(array_size, self.observation_dim)
 			done_array = torch.zeros(array_size, 1)
 			array_index = 0
 
@@ -114,7 +133,7 @@ class BaseAgent():
 			for t in tqdm(range(env.ep_len + 1), desc="train"):
 
 				## Select action and observe next state, reward
-				if episode > self.params['random_episodes']:
+				if episode >= self.params['random_episodes']:
 					action = self.select_action(state)
 				else:
 					action = self.random_action()
@@ -122,8 +141,8 @@ class BaseAgent():
 				nextState, reward, done, info = env.step(action)
 
 				## Cast reward and done as tensors
-				reward = tensor([[reward]]).float()
-				done = tensor([[1 if done == True else 0]])
+				reward = torch.tensor([[reward]]).float()
+				done = torch.tensor([[1 if done == True else 0]])
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, action, reward, nextState, done))
@@ -136,11 +155,11 @@ class BaseAgent():
 					array_index += 1
 
 				## Preform update
-				if episode > self.params['learning_begins']:
+				if episode >= self.params['learning_begins']:
 					self.optimize_model()
 
 				state = nextState
-				if done:
+				if done.item() == 1:
 					break
 
 			## Send data to the report function which logs data and prints statistics about the algorithm and environment
@@ -159,5 +178,5 @@ class BaseAgent():
 					torch.save(done_array[:array_index], data_path + 'dones')
 
 			## Reduce exploration
-			if episode > self.params['random_episodes']:
+			if episode >= self.params['random_episodes']:
 				self.finish_episode()

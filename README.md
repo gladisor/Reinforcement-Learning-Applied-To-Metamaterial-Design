@@ -31,7 +31,6 @@ params['save_every'] = 100
 params['decay_timesteps'] = 100
 params['num_episodes'] = 120
 params['noise_scale'] = 1.1
-params['action_range'] = env.stepSize
 params['save_data'] = False
 params['use_wandb'] = True
 

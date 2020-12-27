@@ -9,8 +9,9 @@ import io
 import pathlib
 import json
 import numpy as np
+import gym
 
-class BaseTSCSEnv():
+class BaseTSCSEnv(gym.Env):
 	"""docstring for BaseTSCSEnv"""
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		## Matlab interface
@@ -42,7 +43,12 @@ class BaseTSCSEnv():
 		## General
 		self.ep_len = 100
 		self.grid_size = 5.0
-		self.observation_space = 2 * nCyl + nFreq + 2
+		# self.observation_space = 2 * nCyl + nFreq + 2
+		self.observation_space = gym.spaces.Box(
+			low=-np.inf,
+			high=np.inf,
+			shape=(1, 2 * nCyl + nFreq + 2))
+
 		self.stepSize = stepSize
 
 		self.info = {
@@ -74,8 +80,8 @@ class BaseTSCSEnv():
 
 			coords = config.view(self.nCyl, 2)
 			for i in range(self.nCyl):
-				for j in range(i, self.nCyl): # O((n-1) + (n-2) + ... + 1) Runtime complexity
-				# for j in range(self.nCyl): # O(n(n-1)) Runtime complexity
+				# for j in range(i, self.nCyl): # O((n-1) + (n-2) + ... + 1) Runtime complexity
+				for j in range(self.nCyl): # O(n(n-1)) Runtime complexity
 					if i != j:
 						x1, y1 = coords[i]
 						x2, y2 = coords[j]
@@ -210,8 +216,12 @@ class ContinuousTSCSEnv(BaseTSCSEnv):
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(ContinuousTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
-		## Dimention of action space
-		self.action_space = 2 * self.nCyl
+		## action space
+		# self.action_space = 2 * self.nCyl
+		self.action_space = gym.spaces.Box(
+			low=-stepSize,
+			high=stepSize,
+			shape=(1, 2 * self.nCyl))
 
 	def getNextConfig(self, config, action):
 		"""
@@ -224,8 +234,9 @@ class DiscreteTSCSEnv(BaseTSCSEnv):
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(DiscreteTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
-		## Dimention of action space
-		self.action_space = 4 * self.nCyl
+		## Action space
+		# self.action_space = 4 * self.nCyl
+		self.action_space = gym.spaces.Discrete(4 * self.nCyl)
 
 	def getNextConfig(self, config, action):
 		"""

@@ -11,15 +11,13 @@ import random
 
 def default_params():
 	params = {
-		'n_hidden': 1,
-		'h_size': 128,
-		'lr': 0.005,
-		'momentum': 0.9,
-		'eps_end': 0.05,
-		'decay_timesteps': 8000,
-		'target_update': 10,
-		'gamma': 0.9,
-		'batch_size': 64
+		'n_hidden': 2, 				## Number of layers in neural network
+		'h_size': 128,				## Number of neurons per layer
+		'lr': 0.0005,				## Learning rate
+		'momentum': 0.9,			## Momentum of updates
+		'eps_end': 0.05,			## Minimum percentage random action rate
+		'decay_timesteps': 8000,	## How many episodes to decay learning rate over
+		'target_update': 10,		## How many timesteps to take before updating target network
 	}
 
 	## Join ddqn specific params with default
@@ -34,10 +32,10 @@ class DDQNAgent(BaseAgent.BaseAgent):
 		## Defining networks
 
 		self.Qp = DQN(
-			observation_space,
+			self.observation_dim,
 			self.params['h_size'],
 			self.params['n_hidden'],
-			action_space,
+			self.action_space.n,
 			self.params['lr'])
 
 		self.Qt = deepcopy(self.Qp)
@@ -45,12 +43,8 @@ class DDQNAgent(BaseAgent.BaseAgent):
 		## cuda:0 or cpu
 		self.device = self.Qp.device
 
-		## Spaces
-		self.observation_space = observation_space
-		self.action_space = action_space
-
 		## Epsilon
-		self.epsilon = 1.0
+		self.epsilon = 1.0 ## Percentage of random actions to take (starts at 100%)
 		self.eps_end = self.params['eps_end']
 		self.eps_decay_rate = (self.epsilon - self.eps_end) / self.params['decay_timesteps']
 
@@ -78,35 +72,38 @@ class DDQNAgent(BaseAgent.BaseAgent):
 				action = torch.argmax(self.Qp(state), dim=-1).item()
 		else:
 			## Explore
-			action = np.random.randint(self.action_space)
+			action = self.action_space.sample()
 		return torch.tensor([[action]])
 
 	def random_action(self):
-		return torch.tensor([[np.random.randint(self.action_space)]])
+		return torch.tensor([[self.action_space.sample()]])
 
 	def optimize_model(self):
 		"""
 		Bellman update with prioritized sampling
 		"""
-		if self.memory.can_provide_sample(self.params['batch_size']):
+		if self.memory.can_provide_sample(self.batch_size):
 			## Get sample from priority queue
-			batch, indices, weights = self.memory.sample(self.params['batch_size'], self.mem_beta)
+			batch, indices, weights = self.memory.sample(self.batch_size, self.mem_beta)
 
 			## Convert list of transitions to tensors
 			s, a, r, s_, done = self.extract_tensors(batch)
 			a = a.to(self.device)
+			r = r.to(self.device)
+			done = done.to(self.device)
 
 			## Importance sampling weights
-			weights = torch.tensor([weights]).to(self.device)
+			weights = torch.tensor([weights]).T.to(self.device)
 
 			## Current and target Q values
 			current_q_values = self.Qp(s).gather(-1, a)
 			with torch.no_grad():
 				maxQ = self.Qt(s_).max(-1, keepdim=True)[0]
-				target_q_values = r.to(self.device) + (1 - done.to(self.device)) * self.params['gamma'] * maxQ
+				target_q_values = r + (1.0 - done) * self.gamma * maxQ
 
 			## Calculate loss and backprop
-			loss = weights @ F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
+			weighted_loss = weights * F.smooth_l1_loss(current_q_values, target_q_values, reduction='none')
+			loss = weighted_loss.mean()
 			self.Qp.opt.zero_grad()
 			loss.backward()
 			self.Qp.opt.step()
