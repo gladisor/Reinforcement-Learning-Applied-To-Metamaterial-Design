@@ -1,33 +1,43 @@
-from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv
-from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv
-from tscsRL.agents import ddpg
+from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv, DiscreteTSCSEnv
+from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv, DiscreteGradientTSCSEnv
+from tscsRL.agents import ddpg, ddqn
 from tscsRL import utils
 import imageio
 
-# name = 'ddpg4cyl0.45-0.35-8000decay'
-name = 'ddpgGradient4cyl0.45-0.35-8000decay'
-
+name = 'ddqn4cyl0.45-0.35-8000decay'
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
 agent_params = utils.jsonToDict(path + '/agent_params.json')
 
-env = ContinuousGradientTSCSEnv(
+# env = ContinuousGradientTSCSEnv(
+# 	nCyl=env_params['nCyl'],
+# 	kMax=env_params['kMax'],
+# 	kMin=env_params['kMin'],
+# 	nFreq=env_params['nFreq'],
+# 	stepSize=env_params['stepSize'])
+
+# agent = ddpg.DDPGAgent(
+# 	env.observation_space, 
+# 	env.action_space,
+# 	agent_params,
+# 	name)
+# agent.noise_scale = 0.02
+
+env = DiscreteTSCSEnv(
 	nCyl=env_params['nCyl'],
 	kMax=env_params['kMax'],
 	kMin=env_params['kMin'],
 	nFreq=env_params['nFreq'],
 	stepSize=env_params['stepSize'])
 
-agent_params['noise_scale'] = 0.02
-
-agent = ddpg.DDPGAgent(
-	env.observation_space, 
+agent = ddqn.DDQNAgent(
+	env.observation_space,
 	env.action_space,
 	agent_params,
 	name)
+agent.epsilon = 0.1
 
 agent.load_checkpoint(path + '/checkpoints/', 8000)
-print(agent.noise_scale)
 
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
 
@@ -63,3 +73,5 @@ print(f'Initial: {initialRMS}')
 print(f'Min config: {optimalConfig}')
 print(f'Min rms: {optimalRMS}')
 print(f'Min tscs: {optimalTSCS}')
+
+writer.close()
