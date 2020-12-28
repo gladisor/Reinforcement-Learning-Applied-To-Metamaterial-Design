@@ -32,11 +32,12 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 
 	# def getReward(self, RMS, isValid):
 	# 	norm = torch.linalg.norm(self.gradient)
-	# 	gradient_penalty = torch.exp(-norm) * RMS.item() * 0.5
-	# 	reward = -RMS.item() - gradient_penalty
+	# 	gradient_penalty = torch.exp(-norm) * RMS * 0.5
+	# 	## Try squaring RMS
+	# 	reward = -RMS.pow(2) - gradient_penalty
 	# 	if not isValid:
 	# 		reward += -1.0
-	# 	return reward
+	# 	return reward.item()
 
 class ContinuousGradientTSCSEnv(BaseGradientTSCSEnv, ContinuousTSCSEnv):
 	"""docstring for ContinuousGradientTSCSEnv"""
