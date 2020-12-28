@@ -8,7 +8,7 @@
 
 ## Demo
 
-<p>These are examples of episodes of the trained DDPG (left) and DDQN (right) algorithms controling the positioning of 4 cylinder from a random configuration to one which produces low TSCS. The episodes start from initial random configurations. Both algorithms were trained for 8000 episodes to minimize the root mean square (RMS) of TSCS across a range of wavenumbers from 0.45-0.35 ka.</p>
+<p>These are examples of episodes of the trained DDPG (left) and DDQN (right) algorithms controling the positioning of 4 cylinder from a random configuration to one which produces low TSCS. Both algorithms were trained for 8000 episodes to minimize the root mean square (RMS) of TSCS across a range of wavenumbers from 0.45-0.35 ka.</p>
 <p align="center">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddpg4cyl0.45-0.35-8000decay.gif" width="300">
 	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/ddqn4cyl0.45-0.35-8000decay.gif" width="300">
