@@ -50,12 +50,12 @@ agent.learn(env)
 
 <h3>DDPG:</h3>
 <p align="center">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="200">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDPG.png" width="100">
 </p>
 
 <h3>DDQN:</h3>
 <p align="center">
-	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="200">
+	<img src="https://github.com/gladisor/TSCSProject/blob/tristan/images/DDQN.png" width="100">
 </p>
 
 ## Credits
