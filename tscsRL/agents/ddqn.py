@@ -13,7 +13,7 @@ def default_params():
 	params = {
 		'n_hidden': 1, 				## Number of layers in neural network
 		'h_size': 128,				## Number of neurons per layer
-		'lr': 0.0005,				## Learning rate
+		'lr': 0.001,				## Learning rate
 		'eps_end': 0.05,			## Minimum percentage random action rate
 		'decay_timesteps': 8000,	## How many episodes to decay learning rate over
 		'target_update': 10,		## How many timesteps to take before updating target network

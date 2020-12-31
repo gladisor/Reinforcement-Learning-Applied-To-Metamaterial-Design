@@ -43,7 +43,7 @@ class BaseTSCSEnv(gym.Env):
 		## General
 		self.ep_len = 100
 		self.grid_size = 5.0
-		# self.observation_space = 2 * nCyl + nFreq + 2
+		
 		self.observation_space = gym.spaces.Box(
 			low=-np.inf,
 			high=np.inf,
@@ -139,13 +139,6 @@ class BaseTSCSEnv(gym.Env):
 			reward += -1.0
 		return reward
 
-	# def getMetric(self, config):
-	# 	x = self.eng.transpose(matlab.double(*config.tolist()))
-	# 	tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
-	# 	tscs = torch.tensor(tscs).T
-	# 	rms = tscs.pow(2).mean().sqrt().view(1,1)
-	# 	return tscs, rms
-
 	def setMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
 		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
@@ -217,7 +210,6 @@ class ContinuousTSCSEnv(BaseTSCSEnv):
 		super(ContinuousTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
 		## action space
-		# self.action_space = 2 * self.nCyl
 		self.action_space = gym.spaces.Box(
 			low=-stepSize,
 			high=stepSize,
@@ -235,7 +227,6 @@ class DiscreteTSCSEnv(BaseTSCSEnv):
 		super(DiscreteTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
 		## Action space
-		# self.action_space = 4 * self.nCyl
 		self.action_space = gym.spaces.Discrete(4 * self.nCyl)
 
 	def getNextConfig(self, config, action):

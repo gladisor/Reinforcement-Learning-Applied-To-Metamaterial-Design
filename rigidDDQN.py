@@ -10,18 +10,13 @@ env = DiscreteGradientTSCSEnv(
 	stepSize=0.5)
 
 params = ddqn.default_params()
-params['n_hidden'] = 1
-params['h_size'] = 128
 params['batch_size'] = 256
-params['lr'] = 0.001
-
 params['save_every'] = 500
 params['decay_timesteps'] = 8000
-params['num_episodes'] = 8500
-params['target_update'] = 10
+params['num_episodes'] = 9000
 params['use_wandb'] = True
 
-name = 'ddqnGradient4cyl0.45-0.35-8000decay'
+name = 'ddqnGradientReward4cyl'
 
 agent = ddqn.DDQNAgent(
 	env.observation_space, 

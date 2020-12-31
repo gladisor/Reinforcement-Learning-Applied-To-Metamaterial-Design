@@ -10,14 +10,13 @@ env = ContinuousGradientTSCSEnv(
 	stepSize=0.5)
 
 params = ddpg.default_params()
-params['save_every'] = 1000
+params['save_every'] = 500
 params['decay_timesteps'] = 8000
 params['num_episodes'] = 9000
 params['noise_scale'] = 1.2
-params['save_data'] = False
 params['use_wandb'] = True
 
-name = 'ddpgGradientWithRewardSquared'
+name = 'ddpgGradientReward4cyl'
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 
