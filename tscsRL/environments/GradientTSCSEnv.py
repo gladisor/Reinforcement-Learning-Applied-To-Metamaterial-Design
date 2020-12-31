@@ -13,7 +13,6 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 		self.gradient = None
 
 		## Observation space changes from 2 * nCyl to 4 * nCyl due to additional gradient info
-		# self.observation_space = 4 * nCyl + nFreq + 2
 		self.observation_space = gym.spaces.Box(
 			low=-np.inf,
 			high=np.inf,
@@ -31,10 +30,10 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 		return state
 
 	# def getReward(self, RMS, isValid):
-	# 	norm = torch.linalg.norm(self.gradient)
-	# 	gradient_penalty = torch.exp(-norm) * RMS * 0.5
-	# 	## Try squaring RMS
-	# 	reward = -RMS.pow(2) - gradient_penalty
+	# 	gradient_penalty = torch.linalg.norm(self.gradient)
+
+	# 	## Penalizing high gradient
+	# 	reward = -RMS - gradient_penalty
 	# 	if not isValid:
 	# 		reward += -1.0
 	# 	return reward.item()
