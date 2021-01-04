@@ -3,6 +3,7 @@ from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv, Discr
 from tscsRL.agents import ddpg, ddqn
 from tscsRL import utils
 import imageio
+import torch
 
 ## Name of the run we want to evaluate
 name = 'ddqn4cyl0.45-0.35-8000decay'
@@ -31,7 +32,7 @@ agent = ddqn.DDQNAgent(
 	name)
 
 ## Set exploration rate to low amount
-agent.epsilon = 0.1
+agent.epsilon = 0.05
 # agent.noise_scale = 0.02
 
 ## Load weights, specify checkpoint number
@@ -42,7 +43,23 @@ writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
 
 
 ## THIS WHOLE BLOCK IS THE INTERACTION LOOP
-state = env.reset()
+
+## Starting from a random config
+# state = env.reset()
+## End starting from random config
+
+## Starting from a predefined config
+env.config = torch.tensor([[-4.9074,  3.9546,  2.6997,  0.7667,  0.6999,  4.5946,  4.9415, -0.2377]])
+env.counter = torch.tensor([[0.0]])
+env.setMetric(env.config)
+
+env.info['initial'] = env.RMS.item()
+env.info['lowest'] = env.info['initial']
+env.info['final'] = None
+env.info['score'] = 0
+state = env.getState()
+## End starting from random config
+
 done = False
 
 results = {
@@ -65,8 +82,8 @@ while not done:
 	state = nextState
 
 ## Initial stuff
-initialRMS = results['rms'][0]
 initialConfig = results['config'][0]
+initialRMS = results['rms'][0]
 initialTSCS = results['tscs'][0]
 
 ## Optimal stuff
@@ -76,7 +93,10 @@ optimalRMS = results['rms'][minIdx]
 optimalTSCS = results['tscs'][minIdx]
 
 print('RESULTS:')
-print(f'Initial: {initialRMS}')
+print(f'Initial config: {initialConfig}')
+print(f'Initial RMS: {initialRMS}')
+print(f'Initial TSCS: {initialTSCS}')
+print()
 print(f'Min config: {optimalConfig}')
 print(f'Min rms: {optimalRMS}')
 print(f'Min tscs: {optimalTSCS}')
