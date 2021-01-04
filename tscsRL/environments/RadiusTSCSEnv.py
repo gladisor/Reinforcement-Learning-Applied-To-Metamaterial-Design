@@ -198,12 +198,32 @@ class ContinuousRadiiTSCSEnv(BaseRadiiTSCSEnv):
 	def getNextRadii(self, radii, action):
 		return radii + action
 
+class DiscreteRadiiTSCSEnv(BaseRadiiTSCSEnv):
+	"""docstring for DiscreteRadiiTSCSEnv"""
+	def __init__(self, kMax, kMin, nFreq):
+		super(DiscreteRadiiTSCSEnv, self).__init__(kMax, kMin, nFreq)
+		
+		## Action space
+		self.action_space = gym.spaces.Discrete(2 * self.design_M)
+
+	def getNextRadii(self, radii, action):
+		cyl = int(action / 2)
+		direction = action % 2
+
+		if direction == 0:
+			radii[0, cyl] += self.stepSize
+		elif direction == 1:
+			radii[0, cyl] += -self.stepSize
+		else:
+			print('Unrecognized action')
+		return radii
+
 if __name__ == '__main__':
 	import imageio
 
-	writer = imageio.get_writer('radii.mp4', format='mp4', mode='I', fps=15)
+	writer = imageio.get_writer('discrete_radii.mp4', format='mp4', mode='I', fps=15)
 
-	env = ContinuousRadiiTSCSEnv(0.45, 0.35, 11)
+	env = DiscreteRadiiTSCSEnv(0.45, 0.35, 11)
 	state = env.reset()
 
 	done = False
