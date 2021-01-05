@@ -52,11 +52,11 @@ state = env.reset()
 # env.counter = torch.tensor([[0.0]])
 # env.setMetric(env.config)
 
-env.info['initial'] = env.RMS.item()
-env.info['lowest'] = env.info['initial']
-env.info['final'] = None
-env.info['score'] = 0
-state = env.getState()
+# env.info['initial'] = env.RMS.item()
+# env.info['lowest'] = env.info['initial']
+# env.info['final'] = None
+# env.info['score'] = 0
+# state = env.getState()
 ## End starting from random config
 
 done = False
