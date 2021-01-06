@@ -1,5 +1,5 @@
 from tscsRL.agents import BaseAgent
-from tscsRL.agents.models.ActorCritic import Actor, Critic
+from tscsRL.agents.models.ActorCritic import Actor, Critic, ImageActor, ImageCritic
 
 import torch
 from torch import tensor
@@ -142,3 +142,178 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		self.critic.load_state_dict(torch.load(path + f'critic{episode}.pt'))
 		self.targetActor.load_state_dict(torch.load(path + f'targetActor{episode}.pt'))
 		self.targetCritic.load_state_dict(torch.load(path + f'targetCritic{episode}.pt'))
+
+
+class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
+	"""docstring for DDPGAgent"""
+	def __init__(self, observation_space, action_space, params, run_name):
+		super(ImageDDPGAgent, self).__init__(observation_space, action_space, params, run_name)
+
+		self.Transition = namedtuple('Transition', ('s', 'img,', 'a', 'r', 's_', 'img_','done'))
+		## Defining networks
+		self.actor = ImageActor(
+			self.observation_dim,
+			self.params['actor_n_hidden'],
+			self.params['actor_h_size'],
+			self.action_dim,
+			self.action_range,
+			self.params['actor_lr'])
+
+		self.critic = ImageCritic(
+			self.observation_dim,
+			self.params['critic_n_hidden'],
+			self.params['critic_h_size'],
+			self.action_dim,
+			self.params['critic_lr'],
+			self.params['critic_wd'])
+
+		## Target networks
+		self.targetActor = deepcopy(self.actor)
+		self.targetCritic = deepcopy(self.critic)
+
+	def select_action(self, img, state):
+		with torch.no_grad():
+			noise = np.random.normal(0, 1, size=self.action_space.shape) * self.noise_scale
+			action = self.actor(img, state).cpu() + noise
+			action = torch.max(torch.min(action, self.action_high), self.action_low)
+		return action
+
+	def optimize_model(self):
+		if self.memory.can_provide_sample(self.batch_size):
+			## Get data from memory
+			batch, indices, weights = self.memory.sample(self.batch_size, self.mem_beta)
+			s, img, a, r, s_, img_, done = self.extract_tensors(batch)
+			r = r.to(self.device)
+			done = done.to(self.device)
+			weights = tensor([weights]).to(self.device)
+
+			## Compute target
+			maxQ = self.targetCritic(img_, s_, self.targetActor(img_, s_).detach())
+			target_q = r + (1.0 - done) * self.gamma * maxQ
+
+			## Update the critic network
+			self.critic.opt.zero_grad()
+			current_q = self.critic(img, s, a)
+			criticLoss = weights @ F.smooth_l1_loss(current_q, target_q.detach(), reduction='none')
+			criticLoss.backward()
+			self.critic.opt.step()
+
+			## Update the actor network
+			self.actor.opt.zero_grad()
+			actorLoss = -self.critic(img, s, self.actor(img, s)).mean()
+			actorLoss.backward()
+			self.actor.opt.step()
+
+			## Copy policy weights over to target net
+			self.soft_update(self.targetActor, self.actor)
+			self.soft_update(self.targetCritic, self.critic)
+
+			## Updating priority of transition by last absolute td error
+			td = torch.abs(target_q - current_q).detach()
+			self.memory.update_priorities(indices, td + 1e-5)
+
+	def extract_tensors(self, batch):
+		batch = self.Transition(*zip(*batch))
+		s = torch.cat(batch.s)
+		img = torch.cat(batch.img)
+		a = torch.cat(batch.a)
+		r = torch.cat(batch.r)
+		s_ = torch.cat(batch.s_)
+		img_ = torch.cat(batch.img_)
+		done = torch.cat(batch.done)
+		return s, img, a, r, s_, img_, done
+
+	def learn(self, env):
+		path = 'results/' + self.run_name + '/'
+		checkpoint_path = path + 'checkpoints/'
+		data_path = path + 'data/'
+
+		## Make directory for run
+		os.makedirs(path, exist_ok=False)
+		os.makedirs(checkpoint_path, exist_ok=True)
+
+		env_params = env.getParams()
+		## Save settings for env and agent at beginning of run
+		dictToJson(env_params, path + 'env_params.json')
+		dictToJson(self.params, path + 'agent_params.json')
+
+		run_params = {**env_params, **self.params}
+
+		## Prepare to save data from run
+		if self.params['save_data']:
+			os.makedirs(data_path, exist_ok=True)
+			array_size = self.params['num_episodes'] * env.ep_len
+			state_array = torch.zeros(array_size, self.observation_dim)
+			action_array = torch.zeros(array_size, self.action_dim)
+			reward_array = torch.zeros(array_size, 1)
+			next_state_array = torch.zeros(array_size, self.observation_dim)
+			done_array = torch.zeros(array_size, 1)
+			array_index = 0
+
+		## Initialize logger to track episode statistics
+		logger = None
+		if self.params['use_wandb']:
+			logger = self.getLogger(run_params, self.run_name)
+
+		for episode in range(self.params['num_episodes']):
+
+			## Reset environment to starting state
+			state = env.reset()
+			img = env.img
+
+			for t in tqdm(range(env.ep_len + 1), desc="train"):
+
+				## Select action and observe next state, reward
+				if episode >= self.params['random_episodes']:
+					action = self.select_action(img, state)
+				else:
+					action = self.random_action()
+
+				nextState, reward, done, info = env.step(action)
+				nextImg = env.img
+
+				## Cast reward and done as tensors
+				reward = torch.tensor([[reward]]).float()
+				done = torch.tensor([[1 if done == True else 0]])
+
+				## Store transition in memory
+				self.memory.push(self.Transition(state, img, action, reward, nextState, nextImg, done))
+				if self.params['save_data']:
+					state_array[array_index] = state
+					action_array[array_index] = action
+					reward_array[array_index] = reward
+					next_state_array[array_index] = nextState
+					done_array[array_index] = done
+					array_index += 1
+
+				## Preform update
+				if episode >= self.params['learning_begins']:
+					self.optimize_model()
+
+				state = nextState
+				img = nextImg
+
+				if done.item() == 1:
+					break
+
+			## Send data to the report function which logs data and prints statistics about the algorithm and environment
+			data = {'episode': episode, **info}
+			self.report(data, logger)
+
+			## Saving model checkpoint and data
+			if episode % self.params['save_every'] == 0:
+				self.save_checkpoint(checkpoint_path, episode)
+
+				if self.params['save_data']:
+					torch.save(state_array[:array_index], data_path + 'states')
+					torch.save(img_array[:array_index], data_path + 'imgs')
+					torch.save(action_array[:array_index], data_path + 'actions')
+					torch.save(reward_array[:array_index], data_path + 'rewards')
+					torch.save(next_state_array[:array_index], data_path + 'nextStates')
+					torch.save(next_img_array[:array_index], data_path + 'nextImgs')
+					torch.save(done_array[:array_index], data_path + 'dones')
+
+			## Reduce exploration
+			if episode >= self.params['random_episodes']:
+				self.finish_episode()
+

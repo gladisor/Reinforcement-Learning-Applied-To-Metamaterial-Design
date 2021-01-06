@@ -6,7 +6,7 @@ import os
 import json
 from tqdm import tqdm
 import wandb
-from np import prod
+from numpy import prod
 import gym
 
 def default_params():
