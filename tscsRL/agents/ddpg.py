@@ -7,6 +7,13 @@ import torch.nn.functional as F
 from copy import deepcopy
 import numpy as np
 import wandb
+from collections import namedtuple
+import os
+from tscsRL.utils import dictToJson
+from tqdm import tqdm
+from numpy import prod
+from tscsRL.utils import plot
+
 
 def default_params():
 	params = {
@@ -144,12 +151,12 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		self.targetCritic.load_state_dict(torch.load(path + f'targetCritic{episode}.pt'))
 
 
-class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
+class ImageDDPGAgent(DDPGAgent):
 	"""docstring for DDPGAgent"""
 	def __init__(self, observation_space, action_space, params, run_name):
 		super(ImageDDPGAgent, self).__init__(observation_space, action_space, params, run_name)
 
-		self.Transition = namedtuple('Transition', ('s', 'img,', 'a', 'r', 's_', 'img_','done'))
+		self.Transition = namedtuple('Transition', ('s', 'img', 'a', 'r', 's_', 'img_', 'done'))
 		## Defining networks
 		self.actor = ImageActor(
 			self.observation_dim,
@@ -226,7 +233,6 @@ class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
 	def learn(self, env):
 		path = 'results/' + self.run_name + '/'
 		checkpoint_path = path + 'checkpoints/'
-		data_path = path + 'data/'
 
 		## Make directory for run
 		os.makedirs(path, exist_ok=False)
@@ -239,17 +245,6 @@ class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
 
 		run_params = {**env_params, **self.params}
 
-		## Prepare to save data from run
-		if self.params['save_data']:
-			os.makedirs(data_path, exist_ok=True)
-			array_size = self.params['num_episodes'] * env.ep_len
-			state_array = torch.zeros(array_size, self.observation_dim)
-			action_array = torch.zeros(array_size, self.action_dim)
-			reward_array = torch.zeros(array_size, 1)
-			next_state_array = torch.zeros(array_size, self.observation_dim)
-			done_array = torch.zeros(array_size, 1)
-			array_index = 0
-
 		## Initialize logger to track episode statistics
 		logger = None
 		if self.params['use_wandb']:
@@ -260,7 +255,8 @@ class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
 			## Reset environment to starting state
 			state = env.reset()
 			img = env.img
-
+			lowest = env.RMS.item()
+			episode_reward = 0
 			for t in tqdm(range(env.ep_len + 1), desc="train"):
 
 				## Select action and observe next state, reward
@@ -272,19 +268,16 @@ class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
 				nextState, reward, done, info = env.step(action)
 				nextImg = env.img
 
+				if env.RMS.item() < lowest:
+					lowest = env.RMS.item()
+
 				## Cast reward and done as tensors
 				reward = torch.tensor([[reward]]).float()
+				episode_reward += reward
 				done = torch.tensor([[1 if done == True else 0]])
 
 				## Store transition in memory
 				self.memory.push(self.Transition(state, img, action, reward, nextState, nextImg, done))
-				if self.params['save_data']:
-					state_array[array_index] = state
-					action_array[array_index] = action
-					reward_array[array_index] = reward
-					next_state_array[array_index] = nextState
-					done_array[array_index] = done
-					array_index += 1
 
 				## Preform update
 				if episode >= self.params['learning_begins']:
@@ -300,20 +293,19 @@ class ImageDDPGAgent(BaseAgent.BaseAgent, DDPGAgent):
 			data = {'episode': episode, **info}
 			self.report(data, logger)
 
+
 			## Saving model checkpoint and data
-			if episode % self.params['save_every'] == 0:
+			if (episode+1) % (self.params['save_every']) == 0:
 				self.save_checkpoint(checkpoint_path, episode)
 
-				if self.params['save_data']:
-					torch.save(state_array[:array_index], data_path + 'states')
-					torch.save(img_array[:array_index], data_path + 'imgs')
-					torch.save(action_array[:array_index], data_path + 'actions')
-					torch.save(reward_array[:array_index], data_path + 'rewards')
-					torch.save(next_state_array[:array_index], data_path + 'nextStates')
-					torch.save(next_img_array[:array_index], data_path + 'nextImgs')
-					torch.save(done_array[:array_index], data_path + 'dones')
+			if self.params['save']:
+				self.params['reward'].append(episode_reward)
+				self.params['lowest'].append(lowest)
 
 			## Reduce exploration
 			if episode >= self.params['random_episodes']:
 				self.finish_episode()
 
+		if self.params['plot_hpc']:
+			plot('reward', self.params['reward'], path)
+			plot('lowest', self.params['lowest'], path)

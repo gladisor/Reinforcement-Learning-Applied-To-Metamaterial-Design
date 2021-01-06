@@ -3,6 +3,7 @@ import matlab
 import torch
 import numpy as np
 import gym
+import json
 
 
 class ImageTSCSEnv(ContinuousTSCSEnv):
@@ -19,7 +20,7 @@ class ImageTSCSEnv(ContinuousTSCSEnv):
         self.observation_space = gym.spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(1, 4 * nCyl + nFreq + 2))
+            shape=(1, 829))
 
     def setMetric(self, config):
         x = self.eng.transpose(matlab.double(*config.tolist()))

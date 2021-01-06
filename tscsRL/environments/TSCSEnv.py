@@ -34,7 +34,8 @@ class BaseTSCSEnv(gym.Env):
 		self.counter = None
 
 		## Image
-		self.img_dim = (600, 600)
+		#self.img_dim = (600, 600)
+		self.img_dim = (50, 50)
 		self.transform = transforms.Compose([
 			transforms.Resize(self.img_dim),
 			transforms.Grayscale(),

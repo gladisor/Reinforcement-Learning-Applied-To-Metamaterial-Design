@@ -1,7 +1,7 @@
 import torch
 from torch import tensor, cat, relu, tanh
 import torch.nn as nn
-from coordconv import AddLayers
+from tscsRL.agents.models.coordconv import AddLayers
 
 
 class Actor(nn.Module):
@@ -145,7 +145,7 @@ class ImageCritic(nn.Module):
 	def forward(self, img, state, action):
 		img = img.to(self.device)
 		state = state.to(self.device)
-		action = actiom.to(self.device)
+		action = action.to(self.device)
 		x = self.addlayers(img)
 		x = self.conv(x)
 		x = cat([x.float(), state.float(), action.float()], dim=-1).float()

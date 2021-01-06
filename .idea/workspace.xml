@@ -2,9 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="25a1ae5a-8035-4889-884d-9b13ec7e877d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/tscsRL/agents/BaseAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/agents/BaseAgent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rigidImageDDPG.py" beforeDir="false" afterPath="$PROJECT_DIR$/rigidImageDDPG.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tscsRL/agents/ddpg.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/agents/ddpg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tscsRL/agents/models/ActorCritic.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/agents/models/ActorCritic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tscsRL/environments/ImageTSCSEnv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/environments/ImageTSCSEnv.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tscsRL/environments/TSCSEnv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/environments/TSCSEnv.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tscsRL/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -137,10 +141,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.rigidImageDDPG" />
-        <item itemvalue="Python.ImageTSCSEnv" />
         <item itemvalue="Python.rigidImageDDPG" />
         <item itemvalue="Python.rigidImageDDPG" />
-        <item itemvalue="Python.rigidDDPG" />
+        <item itemvalue="Python.rigidImageDDPG" />
+        <item itemvalue="Python.rigidImageDDPG" />
       </list>
     </recent_temporary>
   </component>
