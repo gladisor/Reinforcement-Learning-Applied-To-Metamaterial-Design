@@ -7,7 +7,7 @@ import imageio
 import torch
 
 ## Name of the run we want to evaluate
-name = 'ddqnRadii-test'
+name = 'ddqnRadii-3.1'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
@@ -39,7 +39,6 @@ agent.load_checkpoint(path + '/checkpoints/', 3400)
 
 ## For creating a video of the episode
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
-
 
 ## THIS WHOLE BLOCK IS THE INTERACTION LOOP
 

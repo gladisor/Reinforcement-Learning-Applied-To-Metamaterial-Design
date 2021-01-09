@@ -19,7 +19,7 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 		self.center_radii = torch.ones(1, self.center_M) * 1.6
 
 		## Define ring around center object r is ring distance, n is number of cylinders in that ring
-		r = [3.5]
+		r = [3.1]
 		n = [9]
 		self.design_M = sum(n)
 

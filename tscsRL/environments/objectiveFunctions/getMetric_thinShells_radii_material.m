@@ -1,4 +1,8 @@
 function Q = getMetric_thinShells_radii_material(x,M,av,c_pv,rho_shv, k0amax, k0amin, nfreq)
+% if max(size(gcp)) == 0 % parallel pool needed
+%     parpool % create the parallel pool
+% end
+
 hav = av/10; %thicknesses of  thin shells
 % %%%%%%%%%%%%%%%%% Properties of water  %%%%%%%%%%%%%%%%%%%%%%%%%%
 rho =1000;  c0=1480;  
