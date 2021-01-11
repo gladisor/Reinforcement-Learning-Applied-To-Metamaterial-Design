@@ -210,7 +210,7 @@ class ContinuousTSCSEnv(BaseTSCSEnv):
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(ContinuousTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
-		## Dimention of action space
+		## Dimension of action space
 		self.action_space = 2 * self.nCyl
 
 	def getNextConfig(self, config, action):
@@ -224,7 +224,7 @@ class DiscreteTSCSEnv(BaseTSCSEnv):
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(DiscreteTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
 
-		## Dimention of action space
+		## Dimension of action space
 		self.action_space = 4 * self.nCyl
 
 	def getNextConfig(self, config, action):

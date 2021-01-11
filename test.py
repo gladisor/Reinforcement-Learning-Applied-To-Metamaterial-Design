@@ -5,7 +5,15 @@ from tscsRL import utils
 import imageio
 
 # name = 'ddpg4cyl0.45-0.35-8000decay'
-name = 'ddpgGradient4cyl0.45-0.35-8000decay'
+# name = 'ddpgGradient4cyl0.45-0.35-8000decay'
+# name = 'test_10cyl_8grid'
+# name = 'test_10cyl_10grid'
+# name = 'test_10cyl_8grid_3'
+# name = 'test_6cyl_8grid_1'
+# name = 'test_M4_baseline'
+# name = 'test_M4_baseline_8grid'
+# name = 'test_M5_8grid'
+name = 'test_M6_8grid_NS1'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
@@ -17,6 +25,9 @@ env = ContinuousGradientTSCSEnv(
 	kMin=env_params['kMin'],
 	nFreq=env_params['nFreq'],
 	stepSize=env_params['stepSize'])
+
+env.grid_size = env_params['grid_size']
+env.ep_len = env_params['ep_len']
 
 agent_params['noise_scale'] = 0.02
 
