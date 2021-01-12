@@ -94,7 +94,7 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		with torch.no_grad():
 			noise = np.random.normal(0, 1, size=self.action_space.shape) * self.noise_scale
 			action = self.actor(state).cpu() + noise
-			action = torch.max(torch.min(action, self.action_high), self.action_low)
+			action = torch.max(torch.min(action.double(), self.action_high.double()), self.action_low.double())
 		return action
 
 	def random_action(self):
