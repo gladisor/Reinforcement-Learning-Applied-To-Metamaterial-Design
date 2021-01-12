@@ -3,19 +3,19 @@ from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv
 from tscsRL.agents import ddpg
 import numpy as np
 
-env = ContinuousTSCSEnv(
-	nCyl=4,
-	kMax=0.45,
-	kMin=0.35,
-	nFreq=11,
-	stepSize=0.5)
-
-# env = ContinuousGradientTSCSEnv(
+# env = ContinuousTSCSEnv(
 # 	nCyl=4,
 # 	kMax=0.45,
 # 	kMin=0.35,
 # 	nFreq=11,
 # 	stepSize=0.5)
+
+env = ContinuousGradientTSCSEnv(
+	nCyl=4,
+	kMax=0.45,
+	kMin=0.35,
+	nFreq=11,
+	stepSize=0.5)
 
 params = ddpg.default_params()
 params['save_every'] = 500

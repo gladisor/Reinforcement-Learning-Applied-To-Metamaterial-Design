@@ -29,14 +29,14 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 		state = torch.cat([self.config, self.TSCS, self.RMS, self.gradient, self.counter], dim=-1).float()
 		return state
 
-	# def getReward(self, RMS, isValid):
-	# 	gradient_penalty = torch.linalg.norm(self.gradient)
-
-	# 	## Penalizing high gradient
-	# 	reward = -RMS - gradient_penalty
-	# 	if not isValid:
-	# 		reward += -1.0
-	# 	return reward.item()
+	def getReward(self, RMS, isValid):
+		gradient_penalty = np.linalg.norm(np.array(self.gradient))
+		gradient_penalty = torch.tensor(gradient_penalty)
+		## Penalizing high gradient
+		reward = -RMS - gradient_penalty
+		if not isValid:
+			reward += -1.0
+		return reward.item()
 
 class ContinuousGradientTSCSEnv(BaseGradientTSCSEnv, ContinuousTSCSEnv):
 	"""docstring for ContinuousGradientTSCSEnv"""
