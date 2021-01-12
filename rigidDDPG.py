@@ -1,22 +1,36 @@
 from tscsRL.environments.TSCSEnv import ContinuousTSCSEnv
 from tscsRL.environments.GradientTSCSEnv import ContinuousGradientTSCSEnv
 from tscsRL.agents import ddpg
+import numpy as np
 
-env = ContinuousGradientTSCSEnv(
+env = ContinuousTSCSEnv(
 	nCyl=4,
 	kMax=0.45,
 	kMin=0.35,
 	nFreq=11,
 	stepSize=0.5)
 
+# env = ContinuousGradientTSCSEnv(
+# 	nCyl=4,
+# 	kMax=0.45,
+# 	kMin=0.35,
+# 	nFreq=11,
+# 	stepSize=0.5)
+
 params = ddpg.default_params()
 params['save_every'] = 500
 params['decay_timesteps'] = 8000
-params['num_episodes'] = 9000
+params['num_episodes'] = 8500
 params['noise_scale'] = 1.2
-params['use_wandb'] = True
+params['reward'] = []
+params['lowest'] = []
+params['save'] = True
+params['plot_hpc'] = True
+params['use_wandb'] = False
 
-name = 'ddpgGradientReward4cyl'
+name = 'ddpgNoGradient4cyl_run1'
+#name = 'ddpgGradient4cyl_run1'
+#name = 'ddpgGradientReward4cyl_run1'
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 
