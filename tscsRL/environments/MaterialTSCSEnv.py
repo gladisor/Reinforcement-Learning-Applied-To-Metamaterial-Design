@@ -176,7 +176,6 @@ class BaseMaterialTSCSEnv(BaseRadiiTSCSEnv):
 			r = self.all_radii[0, cyl]
 			rho_sh = (all_rho_shv[0, cyl].item() - self.min_rho_sh) / (self.max_rho_sh - self.min_rho_sh)
 			c_p = (all_c_pv[0, cyl].item() - self.min_c_p) / (self.max_c_p - self.min_c_p)
-			# color = colors.rgb_to_hsv(np.array([rho_sh, 0.1, c_p]))
 			if self.design_material == 'rho_sh':
 				color = self.color_mapping(rho_sh)
 			elif self.design_material == 'c_p':
@@ -246,10 +245,12 @@ class DiscreteMaterialTSCSEnv(BaseMaterialTSCSEnv):
 if __name__ == '__main__':
 	from tscsRL.environments.MaterialTSCSEnv import DiscreteMaterialTSCSEnv
 	import imageio
+	import matplotlib.pyplot as plt
 
 	writer = imageio.get_writer('material.mp4', format='mp4', mode='I', fps=15)
 
 	env = DiscreteMaterialTSCSEnv(0.45, 0.35, 11, 'rho_sh')
+
 	state = env.reset()
 
 	done = False

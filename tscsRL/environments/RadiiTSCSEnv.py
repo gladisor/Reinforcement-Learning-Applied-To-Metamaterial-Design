@@ -19,8 +19,8 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 		self.center_radii = torch.ones(1, self.center_M) * 1.6
 
 		## Define ring around center object r is ring distance, n is number of cylinders in that ring
-		r = [3.1]
-		n = [9]
+		r = [3.1, 5.2]
+		n = [9, 10]
 		self.design_M = sum(n)
 
 		## Radius range
@@ -34,6 +34,7 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 
 		## Invoke superconstructor 
 		super(BaseRadiiTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
+		self.grid_size = 10.0
 
 		## State information
 		self.config = torch.tensor(rtpairs(r, n))
@@ -127,6 +128,24 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 		buf.close()
 		plt.close(fig)
 		return X.unsqueeze(0)
+
+	def renderIMG(self, radii):
+		"""
+		Produces tensor image of state
+		"""
+		## Generate figure
+		fig, ax = plt.subplots(figsize=(6, 6))
+		ax.axis('equal')
+		ax.set_xlim(xmin=-self.grid_size - 1, xmax=self.grid_size + 1)
+		ax.set_ylim(ymin=-self.grid_size - 1, ymax=self.grid_size + 1)
+		ax.grid()
+
+		all_radii = torch.cat([radii, self.center_radii], dim=-1)
+		for cyl in range(self.nCyl):
+			x, y = self.all_config[cyl]
+			ax.add_artist(Circle((x, y), radius=all_radii[0, cyl]))
+
+		plt.show()
 
 	def getState(self):
 		state = torch.cat([self.radii, self.TSCS, self.RMS, self.counter], dim=-1).float()
@@ -223,8 +242,18 @@ if __name__ == '__main__':
 
 	writer = imageio.get_writer('discrete_radii.mp4', format='mp4', mode='I', fps=15)
 
-	env = DiscreteRadiiTSCSEnv(0.45, 0.35, 11)
+	env = ContinuousRadiiTSCSEnv(0.45, 0.35, 10)
 	state = env.reset()
+
+	print(env.action_space)
+
+	# print(env.TSCS)
+	# print(env.RMS)
+	# plt.imshow(env.getIMG(env.radii).view(env.img_dim))
+	# plt.show()
+
+	# plt.plot(env.TSCS[0])
+	# plt.show()
 
 	done = False
 	while not done:

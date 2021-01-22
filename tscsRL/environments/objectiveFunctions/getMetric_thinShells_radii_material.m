@@ -1,7 +1,8 @@
 function Q = getMetric_thinShells_radii_material(x,M,av,c_pv,rho_shv, k0amax, k0amin, nfreq)
-% if max(size(gcp)) == 0 % parallel pool needed
-%     parpool % create the parallel pool
-% end
+
+if max(size(gcp)) == 0 % parallel pool needed
+    parpool % create the parallel pool
+end
 
 hav = av/10; %thicknesses of  thin shells
 % %%%%%%%%%%%%%%%%% Properties of water  %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,7 +27,7 @@ kav = zeros(nfreq,M);
 kav_max=zeros(nfreq,1);
 Q =zeros(nfreq,1);
 
-for Ifreq=1:length(freqv)
+parfor Ifreq=1:length(freqv)
     freq=freqv(Ifreq);   omega = 2*pi*freq;    
     k0 = omega/c0;
     ka=k0*av;
@@ -45,15 +46,17 @@ end
 
 Ainv=zeros((2*N+1),M);
 AM=zeros((2*N+1),M);
-% Jpvka=zeros((2*N+1),M);
-% Hpvka=zeros((2*N+1),M);
-% % % % % T matrix  for  Rigid cilinders
-% for j = 1:M
-%     Jpvka(:,j) =(besselj(nv'-1,ka(j)) -  besselj(nv'+1,ka(j)))/2;
-%     Hpvka(:,j) =(besselh(nv'-1,ka(j)) -  besselh(nv'+1,ka(j)))/2;
-%     T_1(:,:,j)= diag( -( Jpvka(:,j) )./ ( Hpvka(:,j) ) );
-% %     T{j} = T(:,j);
-% end
+
+%% Rigid
+Jpvka=zeros((2*N+1),M);
+Hpvka=zeros((2*N+1),M);
+% % % % T matrix  for  Rigid cilinders
+for j = 1:M
+    Jpvka(:,j) =(besselj(nv'-1,ka(j)) -  besselj(nv'+1,ka(j)))/2;
+    Hpvka(:,j) =(besselh(nv'-1,ka(j)) -  besselh(nv'+1,ka(j)))/2;
+    T_1(:,:,j)= diag( -( Jpvka(:,j) )./ ( Hpvka(:,j) ) );
+%     T{j} = T(:,j);
+end
 
 T = cell(1,M);
 for j=1:M

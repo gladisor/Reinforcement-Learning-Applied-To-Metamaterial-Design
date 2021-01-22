@@ -248,10 +248,7 @@ class DiscreteTSCSEnv(BaseTSCSEnv):
 		return nextConfig
 
 if __name__ == '__main__':
-	env = BaseTSCSEnv(4, 0.45, 0.35, 11, 0.5)
-
+	env = ContinuousTSCSEnv(4, 0.45, 0.35, 11, 0.5)
 	state = env.reset()
 
-	print(state)
-
-	env.step(2)
+	

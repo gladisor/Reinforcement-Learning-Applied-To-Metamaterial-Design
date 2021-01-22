@@ -1,27 +1,26 @@
 from tscsRL.environments.TSCSEnv import DiscreteTSCSEnv
 from tscsRL.environments.GradientTSCSEnv import DiscreteGradientTSCSEnv
 from tscsRL.agents import ddqn
+from tscsRL import utils
 
-env = DiscreteGradientTSCSEnv(
-	nCyl=4,
-	kMax=0.45,
-	kMin=0.35,
-	nFreq=11,
-	stepSize=0.5)
+## Name of the run we want to evaluate
+name = 'ddqn4cyl0.45-0.35-8000decay'
 
-params = ddqn.default_params()
-params['batch_size'] = 256
-params['save_every'] = 500
-params['decay_timesteps'] = 8000
-params['num_episodes'] = 9000
-params['use_wandb'] = True
+path = 'results/' + name
+env_params = utils.jsonToDict(path + '/env_params.json')
+agent_params = utils.jsonToDict(path + '/agent_params.json')
 
-name = 'ddqnGradientReward4cyl'
+env = DiscreteTSCSEnv(
+	nCyl=env_params['nCyl'],
+	kMax=env_params['kMax'],
+	kMin=env_params['kMin'],
+	nFreq=env_params['nFreq'],
+	stepSize=env_params['stepSize'])
 
 agent = ddqn.DDQNAgent(
 	env.observation_space, 
 	env.action_space,
-	params, 
-	name)
+	agent_params, 
+	name + 'SecondRun')
 
 agent.learn(env)

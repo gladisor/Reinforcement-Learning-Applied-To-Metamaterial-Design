@@ -20,6 +20,9 @@ class Actor(nn.Module):
 			self.norms.append(nn.LayerNorm(hSize))
 		self.mu = nn.Linear(hSize, nActions)
 
+		# self.mu.weight.data.uniform_(-3e-3, 3e-3)
+		# self.mu.bias.data.uniform_(-3e-3, 3e-3)
+
 		## Sending parameters to device and creating optimizer
 		self.to(self.device)
 		self.opt = torch.optim.Adam(self.parameters(), lr=lr)
@@ -36,6 +39,8 @@ class Actor(nn.Module):
 class Critic(nn.Module):
 	def __init__(self, inSize, nHidden, hSize, nActions, lr, wd):
 		super(Critic, self).__init__()
+		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+		
 		self.fc = nn.Linear(inSize + nActions, hSize)
 
 		self.layers = nn.ModuleList()
@@ -45,8 +50,10 @@ class Critic(nn.Module):
 			self.norms.append(nn.LayerNorm(hSize))
 
 		self.value = nn.Linear(hSize, 1)
+		
+		# self.value.weight.data.uniform_(-3e-3, 3e-3)
+		# self.value.bias.data.uniform_(-3e-3, 3e-3)
 
-		self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 		self.to(self.device)
 		self.opt = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=wd)
 

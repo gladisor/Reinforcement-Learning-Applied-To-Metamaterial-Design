@@ -7,14 +7,14 @@ import imageio
 import torch
 
 ## Name of the run we want to evaluate
-name = 'ddqnRadii-3.1'
+name = 'ddpgRigidRadii_19cyl'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
 agent_params = utils.jsonToDict(path + '/agent_params.json')
 
 ## Change this environment to whatever one you need
-env = DiscreteRadiiTSCSEnv(
+env = ContinuousRadiiTSCSEnv(
 	kMax=env_params['kMax'],
 	kMin=env_params['kMin'],
 	nFreq=env_params['nFreq'])
@@ -24,18 +24,18 @@ env.ep_len = env_params['ep_len']
 env.grid_size = env_params['grid_size']
 
 ## Change this to the correct agent you want to evaluate
-agent = ddqn.DDQNAgent(
+agent = ddpg.DDPGAgent(
 	env.observation_space,
 	env.action_space,
 	agent_params,
 	name)
 
 ## Set exploration rate to low amount
-agent.epsilon = 0.05
+agent.epsilon = 0.02505
 # agent.noise_scale = 0.02
 
 ## Load weights, specify checkpoint number
-agent.load_checkpoint(path + '/checkpoints/', 3400)
+agent.load_checkpoint(path + '/checkpoints/', 900)
 
 ## For creating a video of the episode
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
