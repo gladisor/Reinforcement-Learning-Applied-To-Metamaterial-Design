@@ -38,6 +38,68 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 	# 		reward += -1.0
 	# 	return reward.item()
 
+	def getReward(self, RMS, inValid):
+		return -RMS.item() - inValid
+
+	def checkIsValid(self, x1, y1, i, config):
+		withinBounds = False
+		overlap = False
+		config = torch.cat([config[0:i], config[i+1:]])
+
+		if (self.grid_size > abs(x1)) and (self.grid_size > abs(y1)):
+			withinBounds = True
+
+		for i in range(self.nCyl-1):
+			x2, y2 = config[i]
+			d = torch.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+			if d <= 2.1:
+				overlap = True
+
+		return withinBounds and not overlap
+
+	def getNextConfig(self, config, actions):
+		config = config.view(self.nCyl, 2)
+		nextConfig = config
+		actions = actions.view(self.nCyl, 2)
+		inValid = self.nCyl
+
+		for i in range(self.nCyl):
+			x1, y1 = config[i] + actions[i]
+
+			isValid = self.checkIsValid(x1, y1, i, nextConfig)
+
+			if isValid:
+				nextConfig[i] = torch.tensor([x1, y1])
+				inValid -= 1
+
+		return nextConfig.view(1, 2*self.nCyl), inValid
+
+	def step(self, action):
+		self.config, inValid = self.getNextConfig(self.config, action)
+
+		self.setMetric(self.config)
+		self.counter += 1 / self.ep_len
+		nextState = self.getState()
+
+		reward = self.getReward(self.RMS, inValid)
+		self.info['score'] += reward
+
+		done = False
+		if int(self.counter.item()) == 1:
+			done = True
+
+		# Update current lowest scatter
+		current = self.RMS.item()
+		if current < self.info['lowest']:
+			self.info['lowest'] = current
+
+		self.info['final'] = current
+
+		return nextState, reward, done, self.info
+
+
+
+
 class ContinuousGradientTSCSEnv(BaseGradientTSCSEnv, ContinuousTSCSEnv):
 	"""docstring for ContinuousGradientTSCSEnv"""
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
@@ -47,6 +109,7 @@ class DiscreteGradientTSCSEnv(BaseGradientTSCSEnv, DiscreteTSCSEnv):
 	"""docstring for DiscreteGradientTSCSEnv"""
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
 		super(DiscreteGradientTSCSEnv, self).__init__(nCyl, kMax, kMin, nFreq, stepSize)
+
 
 if __name__ == '__main__':
 	import numpy as np

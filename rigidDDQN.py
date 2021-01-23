@@ -20,15 +20,15 @@ params = ddqn.default_params()
 params['batch_size'] = 256
 params['save_every'] = 500
 params['decay_timesteps'] = 8000
-params['num_episodes'] = 8500
+params['num_episodes'] = 5
 params['reward'] = []
 params['lowest'] = []
 params['save'] = True
 params['plot_hpc'] = True
 params['use_wandb'] = False
 
-name = 'ddqnNoGradient4cyl_run1'
-# name = 'ddqnGradient4cy_run1'
+#name = 'ddqnNoGradient4cyl_run1'
+name = 'ddqnGradient4cy_run3'
 # name = 'ddqnGradientReward4cyl_run1'
 
 agent = ddqn.DDQNAgent(
