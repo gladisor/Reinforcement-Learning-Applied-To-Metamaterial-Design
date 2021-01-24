@@ -13,7 +13,10 @@ import imageio
 # name = 'test_M4_baseline'
 # name = 'test_M4_baseline_8grid'
 # name = 'test_M5_8grid'
-name = 'test_M6_8grid_NS1'
+# name = 'test_M6_8grid_NS1'
+# name = 'test_M6_8grid_NS1_invalid10'
+name = 'test_M6_8grid_validConfig_check'
+# name = 'test_M6_8grid_VCC_15k_NS1'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')

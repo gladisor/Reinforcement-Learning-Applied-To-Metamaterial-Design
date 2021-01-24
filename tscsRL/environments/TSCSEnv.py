@@ -10,6 +10,8 @@ import pathlib
 import json
 import numpy as np
 
+import os
+
 class BaseTSCSEnv():
 	"""docstring for BaseTSCSEnv"""
 	def __init__(self, nCyl, kMax, kMin, nFreq, stepSize):
@@ -25,6 +27,7 @@ class BaseTSCSEnv():
 		self.kMax = matlab.double([kMax])
 		self.kMin = matlab.double([kMin])
 		self.nFreq = matlab.double([nFreq])
+		self.d_min = 2.11
 
 		## State variables
 		self.config = None
@@ -69,6 +72,7 @@ class BaseTSCSEnv():
 		"""
 		withinBounds = False
 		overlap = False
+		invalid_cyl = []
 		if (-self.grid_size < config).all() and (config < self.grid_size).all():
 			withinBounds = True
 
@@ -82,7 +86,10 @@ class BaseTSCSEnv():
 						d = torch.sqrt((x2-x1)**2 + (y2-y1)**2)
 						if d <= 2.1:
 							overlap = True
-		return withinBounds and not overlap
+							invalid_cyl.append(i)
+							invalid_cyl.append(j)
+
+		return withinBounds and not overlap, invalid_cyl, overlap
 
 	def getConfig(self):
 		"""
@@ -178,12 +185,29 @@ class BaseTSCSEnv():
 		"""
 		prevConfig = self.config.clone()
 		nextConfig = self.getNextConfig(self.config.clone(), action)
-		isValid = self.validConfig(nextConfig)
+		isValid, invalid_cyl, overlap = self.validConfig(nextConfig)
+		# print("1st isValid check", isValid)
 
 		if isValid:
 			self.config = nextConfig
-		else: ## Invalid next state, do not change state variables
-			self.config = prevConfig
+		retry = 0
+		while (overlap == True):
+			# print("first overlap check", overlap)
+			# print("config = ", nextConfig)
+			mlab_invalid_cyl = [x+1 for x in invalid_cyl]
+			# print("mlab_invalid_cyl = ", mlab_invalid_cyl)
+			config_mask = self.getConfigMask(self.config, mlab_invalid_cyl)
+			config_mask = torch.tensor(config_mask)
+			# print("config_mask = ", config_mask)
+			nextConfig = self.getNextConfig(self.config, config_mask)
+			self.config = nextConfig
+			isValid, invalid_cyl, overlap = self.validConfig(nextConfig)
+			# print("final overlap check", overlap)
+			retry += 1
+
+			if retry == 100:
+				os.system("say 'Retries exceed 100'")
+				# raise Exception
 
 		self.setMetric(self.config)
 		self.counter += 1/self.ep_len
@@ -204,6 +228,11 @@ class BaseTSCSEnv():
 		self.info['final'] = current
 
 		return nextState, reward, done, self.info
+
+	def getConfigMask(self, config, invalid_cyl):
+		config = self.eng.transpose(matlab.double(*config.tolist()))
+		config_mask = self.eng.getConfig_Mask(config, invalid_cyl, self.M, self.d_min)
+		return config_mask
 
 class ContinuousTSCSEnv(BaseTSCSEnv):
 	"""docstring for ContinuousTSCSEnv"""
@@ -245,11 +274,25 @@ class DiscreteTSCSEnv(BaseTSCSEnv):
 		nextConfig = coords.view(1, 2 * self.nCyl)
 		return nextConfig
 
+
 if __name__ == '__main__':
 	env = BaseTSCSEnv(4, 0.45, 0.35, 11, 0.5)
 
 	state = env.reset()
+	config = env.getConfig()
+	# config = [1.5, -2.4, 1.2, 2.5, 2.1, 1.9, -1.2, -3.4]
+	# config = torch.DoubleTensor(config)
+	print(config)
 
-	print(state)
+	isValid, invalid_cyl = env.validConfig(config)
+	print(isValid)
+	print(invalid_cyl)
 
-	env.step(2)
+	eng = matlab.engine.start_matlab()
+	# config = eng.transpose(matlab.double(*config.tolist()))
+
+	print(config)
+	print(env.nCyl)
+
+	config_mask = env.getConfigMask(config, invalid_cyl)
+	config_mask = torch.tensor(config_mask)
