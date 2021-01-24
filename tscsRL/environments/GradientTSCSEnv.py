@@ -38,7 +38,9 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 	# 		reward += -1.0
 	# 	return reward.item()
 
+	## Modification for Multiple cylinders
 	def getReward(self, RMS, inValid):
+		# New reward function. Invalid
 		return -RMS.item() - inValid
 
 	def checkIsValid(self, x1, y1, i, config):
