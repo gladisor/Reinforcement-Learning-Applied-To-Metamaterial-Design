@@ -95,7 +95,7 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 
 		self.info['final'] = current
 
-		return nextState, reward, done, self.info
+		return nextState, reward, done, self.info, inValid
 
 
 

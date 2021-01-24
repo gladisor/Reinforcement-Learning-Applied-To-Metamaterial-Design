@@ -133,6 +133,7 @@ class BaseAgent():
 			state = env.reset()
 			lowest = env.RMS.item()
 			episode_reward = 0
+			num_invalid = 0
 			for t in tqdm(range(env.ep_len + 1), desc="train"):
 
 				## Select action and observe next state, reward
@@ -141,7 +142,10 @@ class BaseAgent():
 				else:
 					action = self.random_action()
 
-				nextState, reward, done, info = env.step(action)
+				# nextState, reward, done, info = env.step(action)
+				nextState, reward, done, info, inValid = env.step(action)
+
+				num_invalid += inValid
 
 				if env.RMS.item() < lowest:
 					lowest = env.RMS.item()
@@ -180,6 +184,7 @@ class BaseAgent():
 			if self.params['save']:
 				self.params['reward'].append(episode_reward)
 				self.params['lowest'].append(lowest)
+				self.params['invalid'].append(num_invalid)
 
 			## Reduce exploration
 			if episode >= self.params['random_episodes']:
@@ -188,5 +193,7 @@ class BaseAgent():
 		if self.params['plot_hpc']:
 			plot('reward', self.params['reward'], path)
 			plot('lowest', self.params['lowest'], path)
+			plot('invalid', self.params['invalid'], path)
 			np.savetxt(path+"reward.csv", np.array(self.params['reward']), delimiter=",")
 			np.savetxt(path + "lowest.csv", np.array(self.params['lowest']), delimiter=",")
+			np.savetxt(path + "invalid.csv", np.array(self.params['invalid']), delimiter=",")

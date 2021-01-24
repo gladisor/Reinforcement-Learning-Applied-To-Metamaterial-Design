@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="25a1ae5a-8035-4889-884d-9b13ec7e877d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/rigidDDPG.py" beforeDir="false" afterPath="$PROJECT_DIR$/rigidDDPG.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rigidDDQN.py" beforeDir="false" afterPath="$PROJECT_DIR$/rigidDDQN.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tscsRL/agents/BaseAgent.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/agents/BaseAgent.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tscsRL/environments/GradientTSCSEnv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/environments/GradientTSCSEnv.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tscsRL/environments/TSCSEnv.py" beforeDir="false" afterPath="$PROJECT_DIR$/tscsRL/environments/TSCSEnv.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,6 +138,9 @@
       <module name="TSCSProject" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
