@@ -138,7 +138,7 @@ class DDPGAgent(BaseAgent.BaseAgent):
 		torch.save(self.targetCritic.state_dict(), path + f'targetCritic{episode}.pt')
 
 	def load_checkpoint(self, path, episode):
-		self.actor.load_state_dict(torch.load(path + f'actor{episode}.pt'))
-		self.critic.load_state_dict(torch.load(path + f'critic{episode}.pt'))
-		self.targetActor.load_state_dict(torch.load(path + f'targetActor{episode}.pt'))
-		self.targetCritic.load_state_dict(torch.load(path + f'targetCritic{episode}.pt'))
+		self.actor.load_state_dict(torch.load(path + f'actor{episode}.pt', map_location=self.device))
+		self.critic.load_state_dict(torch.load(path + f'critic{episode}.pt', map_location=self.device))
+		self.targetActor.load_state_dict(torch.load(path + f'targetActor{episode}.pt', map_location=self.device))
+		self.targetCritic.load_state_dict(torch.load(path + f'targetCritic{episode}.pt', map_location=self.device))

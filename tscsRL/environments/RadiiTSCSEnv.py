@@ -12,16 +12,16 @@ import io
 
 class BaseRadiiTSCSEnv(BaseTSCSEnv):
 	"""docstring for BaseRadiiTSCSEnv"""
-	def __init__(self, kMax, kMin, nFreq):
+	def __init__(self, kMax, kMin, nFreq, ring_radii=[3.1, 5.2], nCyl_ring=[9, 10], core_radius=1.6):
 		## Define the object in the center which is static
 		self.center_config = torch.tensor([[0.0, 0.0]])
 		self.center_M = self.center_config.shape[0]
-		self.center_radii = torch.ones(1, self.center_M) * 1.6
+		self.core_radius = core_radius
+		self.center_radii = torch.ones(1, self.center_M) * self.core_radius
 
-		## Define ring around center object r is ring distance, n is number of cylinders in that ring
-		r = [3.1, 5.2]
-		n = [9, 10]
-		self.design_M = sum(n)
+		self.ring_radii = ring_radii
+		self.nCyl_ring = nCyl_ring
+		self.design_M = sum(self.nCyl_ring)
 
 		## Radius range
 		self.min_radii = 0.2
@@ -37,7 +37,7 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 		self.grid_size = 10.0
 
 		## State information
-		self.config = torch.tensor(rtpairs(r, n))
+		self.config = torch.tensor(rtpairs(self.ring_radii, self.nCyl_ring))
 		self.all_config = torch.cat([self.config, self.center_config])
 		self.radii = None
 
@@ -56,6 +56,21 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 			low=-np.inf,
 			high=np.inf,
 			shape=(1, self.design_M + nFreq + 2))
+
+	def getParams(self):
+		env_params = {
+			'nCyl': self.nCyl,
+			'kMax': np.array(self.kMax).item(),
+			'kMin': np.array(self.kMin).item(),
+			'nFreq': self.F,
+			'ep_len': self.ep_len,
+			'grid_size': self.grid_size,
+			'stepSize': self.stepSize,
+			'ring_radii': self.ring_radii,
+			'nCyl_ring': self.nCyl_ring,
+			'core_radius': self.core_radius,
+		}
+		return env_params
 
 	def validRadii(self, radii):
 		withinRange = False
@@ -205,8 +220,8 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 
 class ContinuousRadiiTSCSEnv(BaseRadiiTSCSEnv):
 	"""docstring for ContinuousRadiiTSCSEnv"""
-	def __init__(self, kMax, kMin, nFreq):
-		super(ContinuousRadiiTSCSEnv, self).__init__(kMax, kMin, nFreq)
+	def __init__(self, kMax, kMin, nFreq, ring_radii=[3.1, 5.2], nCyl_ring=[9, 10], core_radius=1.6):
+		super(ContinuousRadiiTSCSEnv, self).__init__(kMax, kMin, nFreq, ring_radii, nCyl_ring, core_radius)
 		
 		## Action space
 		self.action_space = gym.spaces.Box(
@@ -219,8 +234,8 @@ class ContinuousRadiiTSCSEnv(BaseRadiiTSCSEnv):
 
 class DiscreteRadiiTSCSEnv(BaseRadiiTSCSEnv):
 	"""docstring for DiscreteRadiiTSCSEnv"""
-	def __init__(self, kMax, kMin, nFreq):
-		super(DiscreteRadiiTSCSEnv, self).__init__(kMax, kMin, nFreq)
+	def __init__(self, kMax, kMin, nFreq, ring_radii=[3.1, 5.2], nCyl_ring=[9, 10], core_radius=1.6):
+		super(DiscreteRadiiTSCSEnv, self).__init__(kMax, kMin, nFreq, ring_radii, nCyl_ring, core_radius)
 		
 		## Action space
 		self.action_space = gym.spaces.Discrete(2 * self.design_M)
@@ -238,30 +253,27 @@ class DiscreteRadiiTSCSEnv(BaseRadiiTSCSEnv):
 		return radii
 
 if __name__ == '__main__':
-	import imageio
+	env = ContinuousRadiiTSCSEnv(
+		kMax=0.45,
+		kMin=0.35,
+		nFreq=11,
+		ring_radii=[4.7, 7, 9.5],
+		nCyl_ring=[6, 7, 10],
+		core_radius=3.2)
 
-	writer = imageio.get_writer('discrete_radii.mp4', format='mp4', mode='I', fps=15)
-
-	env = ContinuousRadiiTSCSEnv(0.45, 0.35, 10)
 	state = env.reset()
 
-	print(env.action_space)
+	import imageio
 
-	# print(env.TSCS)
-	# print(env.RMS)
-	# plt.imshow(env.getIMG(env.radii).view(env.img_dim))
-	# plt.show()
-
-	# plt.plot(env.TSCS[0])
-	# plt.show()
+	writer = imageio.get_writer('continuous_radii.mp4', format='mp4', mode='I', fps=15)
 
 	done = False
 	while not done:
 		img = env.getIMG(env.radii)
 		writer.append_data(img.view(env.img_dim).numpy())
 
+		print(env.RMS, done)
 		action = env.action_space.sample()
 		state, reward, done, info = env.step(action)
-		print(reward, done)
 
 	writer.close()

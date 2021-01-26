@@ -4,23 +4,22 @@ from tscsRL.agents import ddpg
 from tscsRL import utils
 
 ## Name of the run we want to evaluate
-name = 'ddpg4cyl0.45-0.35-8000decay'
+name = 'ddpg3cylGradient'
 
-path = 'results/' + name
-env_params = utils.jsonToDict(path + '/env_params.json')
-agent_params = utils.jsonToDict(path + '/agent_params.json')
+params = ddpg.default_params()
+params['decay_timesteps'] = 1000
 
-env = ContinuousTSCSEnv(
-	nCyl=env_params['nCyl'],
-	kMax=env_params['kMax'],
-	kMin=env_params['kMin'],
-	nFreq=env_params['nFreq'],
-	stepSize=env_params['stepSize'])
+env = ContinuousGradientTSCSEnv(
+	nCyl=3,
+	kMax=0.45,
+	kMin=0.35,
+	nFreq=11,
+	stepSize=0.5)
 
 agent = ddpg.DDPGAgent(
 	env.observation_space, 
 	env.action_space, 
-	agent_params, 
-	name + 'SecondRun')
+	params, 
+	name)
 
 agent.learn(env)
