@@ -7,37 +7,43 @@ import imageio
 import torch
 
 ## Name of the run we want to evaluate
-name = 'ddpg3cylGradient'
+name = 'ddqnRigidRadii_19cyl'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
 agent_params = utils.jsonToDict(path + '/agent_params.json')
 
 ## Change this environment to whatever one you need
-env = ContinuousGradientTSCSEnv(
-	nCyl=env_params['nCyl'],
+# env = DiscreteGradientTSCSEnv(
+# 	nCyl=env_params['nCyl'],
+# 	kMax=env_params['kMax'],
+# 	kMin=env_params['kMin'],
+# 	nFreq=env_params['nFreq'],
+# 	stepSize=env_params['stepSize'])
+
+env = DiscreteRadiiTSCSEnv(
 	kMax=env_params['kMax'],
 	kMin=env_params['kMin'],
-	nFreq=env_params['nFreq'],
-	stepSize=env_params['stepSize'])
+	nFreq=env_params['nFreq'])
 
 ## Make sure these parameters are set from the env_params
 env.ep_len = env_params['ep_len']
 env.grid_size = env_params['grid_size']
+# env.grid_size = 7
 
 ## Change this to the correct agent you want to evaluate
-agent = ddpg.DDPGAgent(
+agent = ddqn.DDQNAgent(
 	env.observation_space,
 	env.action_space,
 	agent_params,
 	name)
 
 ## Set exploration rate to low amount
-# agent.epsilon = 0.02
-agent.noise_scale = 0.02
+agent.epsilon = 0.05
+# agent.noise_scale = 0.02
 
 ## Load weights, specify checkpoint number
-agent.load_checkpoint(path + '/checkpoints/', 1500)
+agent.load_checkpoint(path + '/checkpoints/', 2400)
 
 ## For creating a video of the episode
 writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
@@ -63,41 +69,41 @@ state = env.reset()
 done = False
 
 results = {
-		'config': [],
+		'radii': [],
 		'rms': [],
 		'tscs': []}
 
 while not done:
-	results['config'].append(env.config)
+	results['radii'].append(env.radii)
 	results['rms'].append(env.RMS)
 	results['tscs'].append(env.TSCS)
 
-	img = env.getIMG(env.config)
+	img = env.getIMG(env.radii)
 	writer.append_data(img.view(env.img_dim).numpy())
 
 	action = agent.select_action(state)
 	nextState, reward, done, info = env.step(action)
 
-	print(reward, done)
+	print(env.RMS.item(), done)
 	state = nextState
 
 ## Initial stuff
-initialConfig = results['config'][0]
+initialConfig = results['radii'][0]
 initialRMS = results['rms'][0]
 initialTSCS = results['tscs'][0]
 
 ## Optimal stuff
 minIdx = results['rms'].index(min(results['rms']))
-optimalConfig = results['config'][minIdx]
+optimalConfig = results['radii'][minIdx]
 optimalRMS = results['rms'][minIdx]
 optimalTSCS = results['tscs'][minIdx]
 
 print('RESULTS:')
-print(f'Initial config: {initialConfig}')
+print(f'Initial radii: {initialConfig}')
 print(f'Initial RMS: {initialRMS}')
 print(f'Initial TSCS: {initialTSCS}')
 print()
-print(f'Min config: {optimalConfig}')
+print(f'Min radii: {optimalConfig}')
 print(f'Min rms: {optimalRMS}')
 print(f'Min tscs: {optimalTSCS}')
 
