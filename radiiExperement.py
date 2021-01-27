@@ -5,6 +5,7 @@ from tscsRL.environments.RadiiTSCSEnv import ContinuousRadiiTSCSEnv, DiscreteRad
 ring_radii = [5.0, 7.1]
 nCyl_ring =[11, 12]
 core_radius = 3.2
+name = 'run1'
 
 env = DiscreteRadiiTSCSEnv(
 	kMax=0.45,
@@ -21,12 +22,14 @@ env.grid_size = 12.0
 params = ddqn.default_params()
 params['save_every'] = 100
 params['decay_timesteps'] = 2000
-params['num_episodes'] = 2500
-params['use_wandb'] = True
+params['num_episodes'] = 4
+params['reward'] = []
+params['lowest'] = []
+params['save'] = True
+params['plot_hpc'] = True
+params['use_wandb'] = False
 
 params['batch_size'] = 256
-
-name = 'run1'
 
 agent = ddqn.DDQNAgent(
 	env.observation_space,

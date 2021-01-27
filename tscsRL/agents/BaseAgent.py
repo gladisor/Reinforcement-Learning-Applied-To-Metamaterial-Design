@@ -8,6 +8,9 @@ from tqdm import tqdm
 import wandb
 from numpy import prod
 import gym
+from tscsRL.utils import plot
+import numpy as np
+
 
 def default_params():
 	params = {
@@ -129,7 +132,9 @@ class BaseAgent():
 
 			## Reset environment to starting state
 			state = env.reset()
-
+			lowest = env.RMS.item()
+			episode_reward = 0
+			num_invalid = 0
 			for t in tqdm(range(env.ep_len + 1), desc="train"):
 
 				## Select action and observe next state, reward
@@ -138,10 +143,16 @@ class BaseAgent():
 				else:
 					action = self.random_action()
 
+				# nextState, reward, done, info = env.step(action)
 				nextState, reward, done, info = env.step(action)
+
+
+				if env.RMS.item() < lowest:
+					lowest = env.RMS.item()
 
 				## Cast reward and done as tensors
 				reward = torch.tensor([[reward]]).float()
+				episode_reward += reward
 				done = torch.tensor([[1 if done == True else 0]])
 
 				## Store transition in memory
@@ -167,16 +178,19 @@ class BaseAgent():
 			self.report(data, logger)
 
 			## Saving model checkpoint and data
-			if episode % self.params['save_every'] == 0:
+			if (episode+1) % self.params['save_every'] == 0:
 				self.save_checkpoint(checkpoint_path, episode)
 
-				if self.params['save_data']:
-					torch.save(state_array[:array_index], data_path + 'states')
-					torch.save(action_array[:array_index], data_path + 'actions')
-					torch.save(reward_array[:array_index], data_path + 'rewards')
-					torch.save(next_state_array[:array_index], data_path + 'nextStates')
-					torch.save(done_array[:array_index], data_path + 'dones')
+			if self.params['save']:
+				self.params['reward'].append(episode_reward)
+				self.params['lowest'].append(lowest)
 
 			## Reduce exploration
 			if episode >= self.params['random_episodes']:
 				self.finish_episode()
+
+		if self.params['plot_hpc']:
+			plot(self.run_name+'_reward', self.params['reward'], path)
+			plot(self.run_name+'_lowest', self.params['lowest'], path)
+			np.savetxt(path+self.run_name+"_reward.csv", np.array(self.params['reward']), delimiter=",")
+			np.savetxt(path + self.run_name+"_lowest.csv", np.array(self.params['lowest']), delimiter=",")
