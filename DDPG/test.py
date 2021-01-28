@@ -7,8 +7,19 @@ import imageio
 
 def evaluate(actor, env):
 	state = env.reset()
+
+	# M2 
 	# env.config = torch.tensor([[4.5641, -2.7947,  2.8730,  0.4883]])
+
+	# # M3
+	# # old initial config
 	# env.config = torch.tensor([[-1.8611, -4.3921,  0.6835, -4.3353, -4.4987, -4.3141]])
+
+	# rigid initial config
+	# env.config = torch.tensor([[1.5749, -2.6670, 0.3183, 1.4200, -3.2127, 1.1244]])
+
+	# # M4
+	# # old initial config
 	env.config = torch.tensor([[2.1690, -1.1629, -2.6250,  2.1641,  3.1213,  1.5562,  0.3477,  4.4343]])
 	
 	env.TSCS, env.RMS = env.getMetric(env.config)
