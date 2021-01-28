@@ -6,14 +6,22 @@ import imageio
 import torch
 
 ## Name of the run we want to evaluate
-name = 'ddqn4cyl0.45-0.35-8000decay'
+# name = 'ddqn_M3_ni_POR'
+name = 'ddqn_M4_ni_POR_2'
 
 path = 'results/' + name
 env_params = utils.jsonToDict(path + '/env_params.json')
 agent_params = utils.jsonToDict(path + '/agent_params.json')
 
 ## Change this environment to whatever one you need
-env = DiscreteTSCSEnv(
+# env = DiscreteTSCSEnv(
+# 	nCyl=env_params['nCyl'],
+# 	kMax=env_params['kMax'],
+# 	kMin=env_params['kMin'],
+# 	nFreq=env_params['nFreq'],
+# 	stepSize=env_params['stepSize'])
+
+env = DiscreteGradientTSCSEnv(
 	nCyl=env_params['nCyl'],
 	kMax=env_params['kMax'],
 	kMin=env_params['kMin'],
@@ -49,7 +57,12 @@ writer = imageio.get_writer(name + '.mp4', format='mp4', mode='I', fps=15)
 ## End starting from random config
 
 ## Starting from a predefined config
-env.config = torch.tensor([[-4.9074,  3.9546,  2.6997,  0.7667,  0.6999,  4.5946,  4.9415, -0.2377]])
+# env.config = torch.tensor([[-4.9074,  3.9546,  2.6997,  0.7667,  0.6999,  4.5946,  4.9415, -0.2377]])
+
+# env.config = torch.tensor([[ 1.5749, -2.6670,  0.3183,  1.4200, -3.2127,  1.1244]])
+
+env.config = torch.tensor([[2.1690, -1.1629, -2.6250,  2.1641,  3.1213,  1.5562,  0.3477,  4.4343]])
+
 env.counter = torch.tensor([[0.0]])
 env.setMetric(env.config)
 
