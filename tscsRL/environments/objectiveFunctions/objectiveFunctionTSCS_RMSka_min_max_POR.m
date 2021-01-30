@@ -32,19 +32,19 @@ parfor Ifreq=1:length(freqv)
  nv = -nmax:nmax;
 % %  THE T_n diagonal matrix .....  
 % % T matrix  for inner Rigid cilinders
-%Jpvka =(besselj(nv'-1,ka) -  besselj(nv'+1,ka))/2;
-%Hpvka =(besselh(nv'-1,ka) -  besselh(nv'+1,ka))/2;
-%T_0 = diag( -( Jpvka )./ ( Hpvka ) );
+Jpvka =(besselj(nv'-1,ka) -  besselj(nv'+1,ka))/2;
+Hpvka =(besselh(nv'-1,ka) -  besselh(nv'+1,ka))/2;
+T_0 = diag( -( Jpvka )./ ( Hpvka ) );
 % % % T matrix  for outer cloaking cilinders
-%Jpvkaa =(besselj(nv'-1,kaa) -  besselj(nv'+1,kaa))/2;
-%Hpvkaa =(besselh(nv'-1,kaa) -  besselh(nv'+1,kaa))/2;
-%T_1 = diag( -( Jpvkaa )./ ( Hpvkaa ) );
+Jpvkaa =(besselj(nv'-1,kaa) -  besselj(nv'+1,kaa))/2;
+Hpvkaa =(besselh(nv'-1,kaa) -  besselh(nv'+1,kaa))/2;
+T_1 = diag( -( Jpvkaa )./ ( Hpvkaa ) );
 %%% T matrix for thin elastic shells
-T_0 = T_shell(ka,nv,rho,c0,ha,c_p,rho_sh);
-T_1=T_0;
+% T_0 = T_shell(ka,nv,rho,c0,ha,c_p,rho_sh);
+% T_1=T_0;
 T = cell(1,M);
-%T{1}=T_0;
-    for j=1:M
+T{1}=T_0;
+    for j=2:M
         T{j} = T_1;
     end
 Tdiag = blkdiag(T{:}); 

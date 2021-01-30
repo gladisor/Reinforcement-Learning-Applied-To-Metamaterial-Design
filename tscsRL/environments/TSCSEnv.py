@@ -141,7 +141,8 @@ class BaseTSCSEnv(gym.Env):
 
 	def setMetric(self, config):
 		x = self.eng.transpose(matlab.double(*config.tolist()))
-		tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
+		# tscs = self.eng.getMetric_RigidCylinder(x, self.M, self.kMax, self.kMin, self.nFreq)
+		tscs = self.eng.getMetric(x, self.M, self.kMax, self.kMin, self.nFreq)
 		self.TSCS = torch.tensor(tscs).T
 		self.RMS = self.TSCS.pow(2).mean().sqrt().view(1,1)
 
