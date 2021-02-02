@@ -20,7 +20,7 @@ env = ContinuousGradientTSCSEnv(
 params = ddpg.default_params()
 params['save_every'] = 500
 params['decay_timesteps'] = 8000
-params['num_episodes'] = 200
+params['num_episodes'] = 8500
 params['noise_scale'] = 1.2
 params['reward'] = []
 params['lowest'] = []
@@ -29,7 +29,7 @@ params['save'] = True
 params['plot_hpc'] = True
 params['use_wandb'] = False
 
-name = 'ddpgNoGradient10cyl_run2'
+name = 'factor_5'
 #name = 'ddpgGradient4cyl_run1'
 #name = 'ddpgGradientReward4cyl_run1'
 

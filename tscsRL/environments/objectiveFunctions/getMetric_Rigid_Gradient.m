@@ -1,4 +1,4 @@
-function [Q, qV] = getMetric(x, M, k0amax, k0amin, nfreq)
+function [Q, qV] = getMetric_Rigid_Gradient(x, M, k0amax, k0amin, nfreq)
 
 a = 1;
 aa = 1;

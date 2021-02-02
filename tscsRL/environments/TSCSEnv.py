@@ -43,8 +43,8 @@ class BaseTSCSEnv(gym.Env):
 
 		## General
 		self.ep_len = 100
-		# self.grid_size = 5.0
-		self.grid_size = 10.0
+		self.grid_size = 5.0
+		# self.grid_size = 10.0
 		
 		self.observation_space = gym.spaces.Box(
 			low=-np.inf,

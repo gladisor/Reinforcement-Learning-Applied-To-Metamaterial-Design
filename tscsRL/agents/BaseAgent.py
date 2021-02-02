@@ -191,9 +191,9 @@ class BaseAgent():
 				self.finish_episode()
 
 		if self.params['plot_hpc']:
-			plot('reward', self.params['reward'], path)
-			plot('lowest', self.params['lowest'], path)
-			plot('invalid', self.params['invalid'], path)
-			np.savetxt(path+"reward.csv", np.array(self.params['reward']), delimiter=",")
-			np.savetxt(path + "lowest.csv", np.array(self.params['lowest']), delimiter=",")
-			np.savetxt(path + "invalid.csv", np.array(self.params['invalid']), delimiter=",")
+			plot(self.run_name+'_reward', self.params['reward'], path)
+			plot(self.run_name+'_lowest', self.params['lowest'], path)
+			plot(self.run_name+'_invalid', self.params['invalid'], path)
+			np.savetxt(path+self.run_name+"_reward.csv", np.array(self.params['reward']), delimiter=",")
+			np.savetxt(path + self.run_name+"_lowest.csv", np.array(self.params['lowest']), delimiter=",")
+			np.savetxt(path + self.run_name+"_invalid.csv", np.array(self.params['invalid']), delimiter=",")
