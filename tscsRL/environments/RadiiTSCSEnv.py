@@ -111,7 +111,8 @@ class BaseRadiiTSCSEnv(BaseTSCSEnv):
 		all_radii = torch.cat([radii, self.center_radii], dim=-1)
 		av = self.eng.transpose(matlab.double(*all_radii.tolist()))
 
-		tscs = self.eng.getMetric_thinShells_radii_material(x, self.M, av, self.c_pv, self.rho_shv, self.kMax, self.kMin, self.nFreq)
+		tscs = self.eng.getMetric_RigidCyliders_radii(x, self.M, av, self.kMax, self.kMin, self.nFreq)
+		# tscs = self.eng.getMetric_thinShells_radii_material(x, self.M, av, self.c_pv, self.rho_shv, self.kMax, self.kMin, self.nFreq)
 		self.TSCS = torch.tensor(tscs).T
 		self.RMS = self.TSCS.pow(2).mean().sqrt().view(1,1)
 
@@ -256,24 +257,29 @@ if __name__ == '__main__':
 	env = ContinuousRadiiTSCSEnv(
 		kMax=0.45,
 		kMin=0.35,
-		nFreq=11,
-		ring_radii=[4.7, 7, 9.5],
-		nCyl_ring=[6, 7, 10],
-		core_radius=3.2)
+		nFreq=11)
+		# ring_radii=[4.7, 7, 9.5],
+		# nCyl_ring=[6, 7, 10],
+		# core_radius=3.2)
 
-	state = env.reset()
+	env.radii = torch.tensor([[0.3997, 0.3258, 0.2163, 0.3209, 0.5080, 0.4866, 0.2933, 0.2925, 0.3569, 0.7287, 0.5647, 0.3234, 0.3024, 0.4325, 0.7464, 0.4650, 0.3630, 0.3009, 0.5665]])
+	env.setMetric(env.radii)
+	print(env.TSCS)
+	print(env.RMS)
 
-	import imageio
+	# state = env.reset()
 
-	writer = imageio.get_writer('continuous_radii.mp4', format='mp4', mode='I', fps=15)
+	# import imageio
 
-	done = False
-	while not done:
-		img = env.getIMG(env.radii)
-		writer.append_data(img.view(env.img_dim).numpy())
+	# writer = imageio.get_writer('continuous_radii.mp4', format='mp4', mode='I', fps=15)
 
-		print(env.RMS, done)
-		action = env.action_space.sample()
-		state, reward, done, info = env.step(action)
+	# done = False
+	# while not done:
+	# 	img = env.getIMG(env.radii)
+	# 	writer.append_data(img.view(env.img_dim).numpy())
 
-	writer.close()
+	# 	print(env.RMS, done)
+	# 	action = env.action_space.sample()
+	# 	state, reward, done, info = env.step(action)
+
+	# writer.close()

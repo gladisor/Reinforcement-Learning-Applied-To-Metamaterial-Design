@@ -30,6 +30,16 @@ class BaseGradientTSCSEnv(BaseTSCSEnv):
 		return state
 
 	# def getReward(self, RMS, isValid):
+	# 	"""
+	# 	Computes reward based on change in scattering 
+	# 	proporitional to how close it is to zero
+	# 	"""
+	# 	reward = -RMS.item()
+	# 	if not isValid:
+	# 		reward += -1.0 / self.nCyl
+	# 	return reward
+
+	# def getReward(self, RMS, isValid):
 	# 	gradient_penalty = torch.linalg.norm(self.gradient)
 
 	# 	## Penalizing high gradient
@@ -51,39 +61,45 @@ class DiscreteGradientTSCSEnv(BaseGradientTSCSEnv, DiscreteTSCSEnv):
 if __name__ == '__main__':
 	import numpy as np
 	env = ContinuousGradientTSCSEnv(
-		nCyl=2,
+		nCyl=10,
 		kMax=0.45,
 		kMin=0.35,
 		nFreq=11,
 		stepSize=0.5)
 
-	state = env.reset()
-	print(state)
-	print(state.shape)
+	env.config = torch.tensor([[-0.7228, -0.0434, -1.8131, -4.9530,  1.7860,  2.5667, -2.3883,  3.1135, 1.2655, -0.7409,  0.8594, -4.9058,  3.8888,  3.3243, -0.2760,  3.1022, -2.0707, -2.5604,  3.1582, -3.1052]]).double()
 
-	action = np.random.normal(0, 1, size=(1, env.action_space))
+	env.setMetric(env.config)
 
-	nextState, reward, done, info = env.step(action)
-	print(nextState)
-	print(reward)
-	print(done)
-	print(info)
+	print(env.RMS)
 
-	env = DiscreteGradientTSCSEnv(
-		nCyl=2,
-		kMax=0.45,
-		kMin=0.35,
-		nFreq=11,
-		stepSize=0.5)
+	# state = env.reset()
+	# print(state)
+	# print(state.shape)
 
-	state = env.reset()
-	print(state)
-	print(state.shape)
+	# action = np.random.normal(0, 1, size=(1, env.action_space))
 
-	action = np.array([[np.random.randint(env.action_space)]])
+	# nextState, reward, done, info = env.step(action)
+	# print(nextState)
+	# print(reward)
+	# print(done)
+	# print(info)
 
-	nextState, reward, done, info = env.step(action)
-	print(nextState)
-	print(reward)
-	print(done)
-	print(info)
+	# env = DiscreteGradientTSCSEnv(
+	# 	nCyl=2,
+	# 	kMax=0.45,
+	# 	kMin=0.35,
+	# 	nFreq=11,
+	# 	stepSize=0.5)
+
+	# state = env.reset()
+	# print(state)
+	# print(state.shape)
+
+	# action = np.array([[np.random.randint(env.action_space)]])
+
+	# nextState, reward, done, info = env.step(action)
+	# print(nextState)
+	# print(reward)
+	# print(done)
+	# print(info)

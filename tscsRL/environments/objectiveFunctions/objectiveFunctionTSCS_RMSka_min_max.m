@@ -50,7 +50,7 @@ T{1}=T_0;
 Tdiag = blkdiag(T{:}); 
 %%
 %  MAKING THE RIGHT HAND SIDE: Cv= [T_n]*[A_n] VECTOR .....    
-% s = '	MAKING THE RIGHT HAND SIDE:  Cv= [T_n]*[A_n] VECTOR .....'
+% s = ' MAKING THE RIGHT HAND SIDE:  Cv= [T_n]*[A_n] VECTOR .....'
 Ainv=zeros((2*N+1),M);
 AM=zeros((2*N+1),M);
 Ainv(:,1)=exp(1i*k0*XM(1))* exp(1i*nv'*pi/2  );      %%% Incident Plain wave amplitude 
@@ -61,8 +61,8 @@ AM(:,1) = T_0 * Ainv(:,1);
     end
 verAv = reshape(AM, M*(2*N+1) ,1); % verCV is a colunm vector of length (2*N+1)*RN*M
 %%
-% %	MAKING THE BIGMATRICES:   Xbig and gradXbig 
-%  s = '	MAKING THE BIGMATRICES:   Xbig and gradXbig '
+% % MAKING THE BIGMATRICES:   Xbig and gradXbig 
+%  s = '    MAKING THE BIGMATRICES:   Xbig and gradXbig '
 
 Xbig = zeros( M*(2*N+1) );    absrjm = zeros(M);    argrjm = zeros(M);  
 P__jm = zeros(2*N+1); 
@@ -128,11 +128,11 @@ for j = 1:M; %loop over cylinder j with cylinder m
 end
 end
 %%
-%  s = '	SOLVING THE Linear system:   Bv = Xbig \  verAv '
+%  s = '    SOLVING THE Linear system:   Bv = Xbig \  verAv '
 Bv = Xbig \  verAv;   %       Xbig * BV = verCv ==> BV = inv(Xbig)* verCv
 Bcoef = reshape(Bv, (2*N+1),M); % verCV is a colunm vector of length (2*N+1)*RN*M
 %%
-%  s = '	EVALUATING THE GRADIENT VECTOR COMPONENTS s_j'
+%  s = '    EVALUATING THE GRADIENT VECTOR COMPONENTS s_j'
 
 C_nm=zeros((2*N+1),M);
     for I=1:numel(nv)
@@ -174,7 +174,7 @@ C_nm=zeros((2*N+1),M);
         end
     end       
     %%
-% s = '	EVALUATING TSCS Q'    
+% s = ' EVALUATING TSCS Q'    
 %     f_n=zeros(1,2*N+1);
 %     F_n=zeros(2*N+1,M);
 %     g_n=zeros(2*N+1,M);
@@ -227,6 +227,5 @@ end
 % sum_q_j(:,:) = (sum (q_j,1))
 %      Q_RMS(Ifreq) = Q_RMS + ( Q(Ifreq))^2;
 %     Q_square(Ifreq) = ( Q(Ifreq))^2;
-
 
 

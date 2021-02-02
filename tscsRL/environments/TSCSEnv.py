@@ -129,6 +129,23 @@ class BaseTSCSEnv(gym.Env):
 		plt.close(fig)
 		return X.unsqueeze(0)
 
+	def renderIMG(self, config):
+		"""
+		Produces tensor image of configuration
+		"""
+		## Generate figure
+		fig, ax = plt.subplots(figsize=(6, 6))
+		ax.axis('equal')
+		ax.set_xlim(xmin=-self.grid_size - 1, xmax=self.grid_size + 1)
+		ax.set_ylim(ymin=-self.grid_size - 1, ymax=self.grid_size + 1)
+		ax.grid()
+
+		coords = config.view(self.nCyl, 2)
+		for cyl in range(self.nCyl):
+			ax.add_artist(Circle((coords[cyl, 0], coords[cyl, 1]), radius=1))
+
+		plt.show()
+
 	def getReward(self, RMS, isValid):
 		"""
 		Computes reward based on change in scattering 

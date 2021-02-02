@@ -2,9 +2,9 @@ from tscsRL.agents import ddpg, ddqn
 from tscsRL.environments.RadiiTSCSEnv import ContinuousRadiiTSCSEnv, DiscreteRadiiTSCSEnv
 
 ## Change these depending on specified setting
-ring_radii = [5.0, 7.1]
-nCyl_ring =[11, 12]
-core_radius = 3.2
+ring_radii = [3.1, 5.2, 7.3]
+nCyl_ring = [9, 10, 11]
+core_radius = 1.6
 
 env = DiscreteRadiiTSCSEnv(
 	kMax=0.45,
@@ -14,9 +14,12 @@ env = DiscreteRadiiTSCSEnv(
 	nCyl_ring=nCyl_ring,
 	core_radius=core_radius)
 
-## Change these depending on specified setting
+# ## Change these depending on specified setting
 env.ep_len = 250
-env.grid_size = 12.0
+env.grid_size = 9.0
+
+state = env.reset()
+env.renderIMG(env.radii)
 
 params = ddqn.default_params()
 params['save_every'] = 100
@@ -26,7 +29,7 @@ params['use_wandb'] = True
 
 params['batch_size'] = 256
 
-name = 'run1'
+name = '3ring_1.6core'
 
 agent = ddqn.DDQNAgent(
 	env.observation_space,
