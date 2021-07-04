@@ -1,4 +1,4 @@
-# Supression of Total Scattering Cross Section using Reinforcement Learning
+# Reinforcement Learning Applied To Metamaterial Design
 
 <p>Our aim in this research is to use reinforcement learning to design a broadband acoustic cloak through inverse design. For more information on the project you can view our presentations:</p>
 
